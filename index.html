@@ -73,6 +73,13 @@
       <button data-tab="settings"><i class="bi bi-gear"></i> الإعدادات</button>
     </nav>
 
+    <!-- تنبيه مستمر يبقى ظاهرًا في كل التبويبات حتى الرد على جميع الملاحظات -->
+    <div class="persistent-alert" id="persistentAlert" style="display:none">
+      <i class="bi bi-bell-fill"></i>
+      <div class="pa-body" id="persistentAlertBody"></div>
+      <button class="pa-action" id="persistentAlertBtn">الرد الآن <i class="bi bi-arrow-left-short"></i></button>
+    </div>
+
     <main class="content">
 
       <!-- ============ لوحة المتابعة ============ -->

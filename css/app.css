@@ -472,6 +472,71 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.7; }
 .alert-item.resolved { opacity: .6; background: var(--surface-2); border-inline-start-color: var(--muted); }
 .alert-item.resolved .bi { color: var(--muted); }
 
+/* تنبيه مستمر ثابت أعلى كل التبويبات */
+.persistent-alert {
+  position: sticky;
+  top: 116px;
+  z-index: 19;
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 auto;
+  max-width: 1180px;
+  background: var(--danger-soft);
+  border: 1px solid #eccac6;
+  border-inline-start: 5px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+  animation: paGlow 1.8s ease-in-out infinite;
+}
+[data-theme="dark"] .persistent-alert { background: #3a2522; border-color: #5a3a35; }
+@keyframes paGlow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(192,99,92,0.0); }
+  50% { box-shadow: 0 0 0 4px rgba(192,99,92,0.18); }
+}
+.persistent-alert > .bi { color: var(--danger); font-size: 1.35rem; animation: pulse 1.4s infinite; }
+.persistent-alert .pa-body { flex: 1; font-size: 0.92rem; }
+.persistent-alert .pa-body strong { color: var(--danger); }
+.persistent-alert .pa-action {
+  background: var(--danger); color: #fff; border: none;
+  padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.88rem;
+  display: inline-flex; align-items: center; gap: 2px; white-space: nowrap;
+}
+.persistent-alert .pa-action:hover { filter: brightness(0.94); }
+
+/* بيانات المتابعة الزمنية */
+.track {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.78rem; font-weight: 700;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-soft); border-radius: 20px; padding: 2px 9px;
+}
+.track .bi { font-size: 0.85rem; }
+.track.warn { background: #fbeedd; border-color: #ecd6b3; color: #9a6a1e; }
+.track.late { background: var(--danger-soft); border-color: #eccac6; color: var(--danger); }
+[data-theme="dark"] .track.warn { background: #33291a; border-color: #564527; color: #d8b968; }
+[data-theme="dark"] .track.late { background: #3a2522; border-color: #5a3a35; }
+
+.progress-track { margin-top: 8px; }
+.progress-track .pt-bar {
+  height: 7px; border-radius: 6px; background: var(--surface-2);
+  border: 1px solid var(--border); overflow: hidden;
+}
+.progress-track .pt-fill { height: 100%; background: var(--primary); border-radius: 6px; transition: width .4s; }
+.progress-track .pt-fill.late { background: var(--danger); }
+.progress-track .pt-label { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
+
+/* شريحة توزيع الحالات اليومي */
+.daily-stages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.daily-stages .ds {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 700; color: var(--text-soft);
+  background: rgba(255,255,255,0.55); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px;
+}
+[data-theme="dark"] .daily-stages .ds { background: rgba(255,255,255,0.05); }
+.daily-stages .ds .dsdot { width: 9px; height: 9px; border-radius: 50%; }
+.daily-stages .ds b { color: var(--text); }
+
 /* رقاقة بنك المجلات المرشّحة */
 .rec-card {
   border: 1px solid var(--border);
@@ -557,6 +622,8 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.7; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .tabs { top: 62px; }
   .tabs button { padding: 12px 12px; font-size: 0.9rem; }
+  .persistent-alert { top: 108px; border-radius: 0; margin: 0; flex-wrap: wrap; }
+  .persistent-alert .pa-action { width: 100%; justify-content: center; }
   .modal .foot { justify-content: stretch; }
   .modal .foot .btn { flex: 1; justify-content: center; }
 }
