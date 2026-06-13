@@ -1,207 +1,200 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>المؤتمر السعودي الدولي للقانون الرياضي</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- أيقونات مجانية -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        body {
-            font-family: 'Cairo', Tahoma, Arial, sans-serif;
-            background: linear-gradient(135deg, #e3fff4 0%, #e0f7fa 35%, #fffde4 100%);
-            margin: 0;
-            min-height: 100vh;
-            color: #0a301c;
-        }
-        header {
-            background: linear-gradient(90deg, #009e60 60%, #e0f7fa 100%);
-            color: #fff;
-            padding: 40px 0 24px 0;
-            text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0,128,96,0.10);
-            position: relative;
-        }
-        .header-icons {
-            position: absolute;
-            left: 40px;
-            top: 25px;
-            font-size: 2.5rem;
-            color: #ffd600;
-            opacity: 0.9;
-            animation: float 2.5s infinite alternate;
-        }
-        @keyframes float {
-            to { transform: translateY(8px); opacity: 0.8;}
-        }
-        nav {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            background: linear-gradient(90deg, #fffde4 30%, #b3ffd9 90%);
-            box-shadow: 0 2px 10px rgba(153,235,255,0.15);
-            padding: 15px 0 10px 0;
-            font-size: 1.13rem;
-        }
-        nav a {
-            color: #007f5f;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.2s;
-            padding: 7px 18px;
-            border-radius: 12px;
-        }
-        nav a.active, nav a:hover {
-            color: #fff;
-            background: linear-gradient(90deg, #03c88c 40%, #ffd600 80%);
-            box-shadow: 0 2px 8px #fff6;
-        }
-        main {
-            max-width: 900px;
-            margin: 24px auto;
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 6px 30px 0 #b1ebf3;
-            padding: 28px 24px 30px 24px;
-        }
-        section {
-            margin-bottom: 36px;
-            animation: fadeInUp 1s;
-        }
-        @keyframes fadeInUp {
-            from {opacity:0; transform: translateY(40px);}
-            to {opacity:1; transform: translateY(0);}
-        }
-        .icon-circle {
-            display: inline-block;
-            background: linear-gradient(135deg, #009e60 50%, #ffd600 100%);
-            color: #fff;
-            border-radius: 50%;
-            width: 54px;
-            height: 54px;
-            line-height: 54px;
-            text-align: center;
-            font-size: 2rem;
-            box-shadow: 0 4px 14px 0 #7be3b76b;
-            margin-left: 12px;
-        }
-        .btn-main {
-            background: linear-gradient(90deg, #ffd600 60%, #00e8ad 100%);
-            color: #0a301c;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 15px;
-            padding: 10px 38px;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px #d6ffb6a0;
-            cursor: pointer;
-            transition: box-shadow 0.2s, background 0.2s;
-        }
-        .btn-main:hover {
-            background: linear-gradient(90deg, #fffde4 30%, #00e8ad 90%);
-            box-shadow: 0 8px 32px #00e8ad55;
-        }
-        ul, li {
-            font-size: 1.13rem;
-        }
-        footer {
-            background: linear-gradient(90deg, #009e60 60%, #e0f7fa 100%);
-            color: #fff;
-            text-align: center;
-            padding: 18px 0;
-            border-radius: 0 0 16px 16px;
-            font-size: 1.1rem;
-        }
-        @media (max-width:700px) {
-            main {padding: 10px;}
-            nav {gap: 8px; font-size: 1rem;}
-            .header-icons {font-size:1.5rem; left:5px;}
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>منصة متابعة الأبحاث والمجلات العلمية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f7a63">
+  <meta name="description" content="منصة شخصية لمتابعة الأبحاث من الكتابة إلى النشر، وإدارة قاعدة بيانات المجلات القانونية مع ترشيح ذكي.">
+  <!-- خطوط عربية واضحة -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@600;700&family=Lora:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <!-- أيقونات -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-    <header>
-        <span class="header-icons"><i class="bi bi-trophy"></i> <i class="bi bi-people"></i></span>
-        <h1>المؤتمر السعودي الدولي للقانون الرياضي</h1>
-        <p>بناء منظومة قانونية رياضية رائدة لمواكبة مستهدفات <span style="color:#ffd600;">رؤية 2030</span></p>
+
+  <!-- ===================== شاشة الدخول ===================== -->
+  <div class="auth-screen" id="authScreen" data-mode="login">
+    <div class="auth-card">
+      <div class="logo-big"><i class="bi bi-mortarboard-fill"></i></div>
+      <h1 id="authTitle">تسجيل الدخول</h1>
+      <p class="tag">منصة متابعة الأبحاث والمجلات العلمية</p>
+      <form id="authForm" autocomplete="off">
+        <div class="auth-error" id="authError"></div>
+        <label class="field"><span>اسم المستخدم</span>
+          <input id="authUser" required autocomplete="username" placeholder="اسم المستخدم">
+        </label>
+        <label class="field"><span>الرقم السري</span>
+          <input id="authPass" type="password" required autocomplete="current-password" placeholder="••••••••">
+        </label>
+        <div id="registerFields" style="display:none">
+          <label class="field"><span>الاسم الظاهر</span>
+            <input id="authDisplay" placeholder="اسمك">
+          </label>
+          <label class="field"><span>البريد الأكاديمي</span>
+            <input id="authAcademic" type="email" dir="ltr" placeholder="name@university.edu">
+          </label>
+          <label class="field"><span>البريد الخاص</span>
+            <input id="authPersonal" type="email" dir="ltr" placeholder="name@email.com">
+          </label>
+        </div>
+        <button class="btn block" id="authSubmit" type="submit">دخول</button>
+      </form>
+      <div class="auth-switch" id="authSwitch"></div>
+    </div>
+  </div>
+
+  <!-- ===================== التطبيق ===================== -->
+  <div class="app" id="app">
+    <!-- الشريط العلوي -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo"><i class="bi bi-mortarboard-fill"></i></span>
+        <span class="full">متابعة الأبحاث والمجلات</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="alertBellBtn" title="التنبيهات">
+        <i class="bi bi-bell-fill"></i>
+        <span class="badge-count" id="alertBadge" style="display:none">0</span>
+      </button>
+      <div class="user-chip"><i class="bi bi-person-circle"></i><span class="uname" id="userName">—</span></div>
+      <button class="icon-btn" id="logoutBtn" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
     </header>
-    <nav>
-        <a href="#about" class="active"><i class="bi bi-info-circle"></i> عن المؤتمر</a>
-        <a href="#themes"><i class="bi bi-list-ul"></i> المحاور</a>
-        <a href="#registration"><i class="bi bi-pencil-square"></i> التسجيل</a>
-        <a href="#program"><i class="bi bi-calendar2-week"></i> البرنامج</a>
-        <a href="#speakers"><i class="bi bi-mic"></i> المتحدثون</a>
-        <a href="#contact"><i class="bi bi-envelope"></i> تواصل</a>
+
+    <!-- التبويبات -->
+    <nav class="tabs">
+      <button data-tab="dashboard" class="active"><i class="bi bi-speedometer2"></i> لوحة المتابعة</button>
+      <button data-tab="papers"><i class="bi bi-journal-text"></i> الأبحاث</button>
+      <button data-tab="journals"><i class="bi bi-collection"></i> المجلات</button>
+      <button data-tab="alerts"><i class="bi bi-bell"></i> التنبيهات</button>
+      <button data-tab="settings"><i class="bi bi-gear"></i> الإعدادات</button>
     </nav>
-    <main>
-        <section id="about">
-            <span class="icon-circle"><i class="bi bi-info-circle"></i></span>
-            <h2>عن المؤتمر</h2>
-            <p>
-                يجمع هذا المؤتمر أبرز الخبراء والأكاديميين والممارسين في مجال القانون الرياضي لبحث المستجدات العالمية وتبادل الخبرات وإثراء التشريعات والممارسات الرياضية بما يتواكب مع التطورات القانونية ورؤية المملكة 2030.
-            </p>
-        </section>
-        <section id="themes">
-            <span class="icon-circle"><i class="bi bi-list-ul"></i></span>
-            <h2>محاور المؤتمر</h2>
-            <ul>
-                <li>الحوكمة والامتثال القانوني في المؤسسات الرياضية</li>
-                <li>العقود الرياضية وحقوق اللاعبين والأندية</li>
-                <li>التحكيم وتسوية المنازعات الرياضية</li>
-                <li>الذكاء الاصطناعي والتقنية في القانون الرياضي</li>
-            </ul>
-        </section>
-        <section id="registration">
-            <span class="icon-circle"><i class="bi bi-pencil-square"></i></span>
-            <h2>التسجيل</h2>
-            <p>للتسجيل في المؤتمر، يرجى الضغط على الزر أدناه:</p>
-            <button class="btn-main" onclick="showThanks()">سجّل الآن</button>
-            <div id="thanks" style="display:none; margin-top:12px; color:#007f5f; font-weight:bold;">
-                تم استلام طلبكم بنجاح!<br>سيتم التواصل معكم قريبًا.
-            </div>
-        </section>
-        <section id="program">
-            <span class="icon-circle"><i class="bi bi-calendar2-week"></i></span>
-            <h2>البرنامج العلمي</h2>
-            <p>سيتم إعلان البرنامج التفصيلي قريبًا عبر الموقع.</p>
-        </section>
-        <section id="speakers">
-            <span class="icon-circle"><i class="bi bi-mic"></i></span>
-            <h2>المتحدثون الرئيسيون</h2>
-            <ul>
-                <li>د. سعيد العتيبي - خبير القانون الرياضي الدولي</li>
-                <li>د. محمد الزهراني - عضو محكمة التحكيم الرياضي</li>
-                <li>أ. ليلى الحربي - مستشارة التشريعات الرياضية</li>
-            </ul>
-        </section>
-        <section id="contact">
-            <span class="icon-circle"><i class="bi bi-envelope"></i></span>
-            <h2>تواصل معنا</h2>
-            <p>للاستفسارات والمراسلات الرسمية:</p>
-            <p><a href="mailto:sportlaw@jazanu.edu.sa">sportlaw@jazanu.edu.sa</a></p>
-        </section>
+
+    <main class="content">
+
+      <!-- ============ لوحة المتابعة ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="daily-banner" id="dailyBanner"></div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <h2 class="section-title"><i class="bi bi-kanban"></i> مسار المتابعة</h2>
+        <div class="board" id="board"></div>
+      </section>
+
+      <!-- ============ الأبحاث ============ -->
+      <section class="view" id="view-papers">
+        <h2 class="section-title"><i class="bi bi-journal-text"></i> الأبحاث</h2>
+        <div class="toolbar">
+          <div class="search-input grow"><i class="bi bi-search"></i><input id="paperSearch" placeholder="بحث بالعنوان أو المجلة أو الكلمات المفتاحية"></div>
+          <button class="btn" id="addPaperBtn"><i class="bi bi-plus-lg"></i> إضافة بحث</button>
+        </div>
+        <div class="toolbar" id="paperFilters">
+          <button class="btn ghost sm active" data-filter="all">الكل</button>
+          <button class="btn ghost sm" data-filter="writing">تحت الكتابة</button>
+          <button class="btn ghost sm" data-filter="ready">جاهزة للتسليم</button>
+          <button class="btn ghost sm" data-filter="submitted">مُرسلة/قيد التقييم</button>
+          <button class="btn ghost sm" data-filter="published">منشورة</button>
+          <button class="btn ghost sm" data-filter="rejected">مرفوضة</button>
+        </div>
+        <div id="papersList"></div>
+      </section>
+
+      <!-- ============ المجلات ============ -->
+      <section class="view" id="view-journals">
+        <h2 class="section-title"><i class="bi bi-collection"></i> قاعدة بيانات المجلات <span class="muted-note" style="font-weight:400">(<span id="journalCount">0</span> مجلة)</span></h2>
+
+        <!-- قارئ الملخص بالذكاء الاصطناعي -->
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="margin:0 0 12px"><i class="bi bi-stars" style="color:var(--accent)"></i> قارئ الملخص الذكي — ترشيح أنسب المجلات</h3>
+          <label class="field"><span>ملخص المقال</span><textarea id="matchAbstract" placeholder="الصق ملخص مقالك هنا ليحلّله الذكاء الاصطناعي ويرشّح أنسب المجلات…"></textarea></label>
+          <div class="form-grid">
+            <label class="field"><span>الكلمات المفتاحية</span><input id="matchKeywords" placeholder="مفصولة بفواصل"></label>
+            <label class="field"><span>عدد كلمات المقال</span><input id="matchWords" placeholder="مثال: 8000"></label>
+          </div>
+          <button class="btn accent" id="matchBtn"><i class="bi bi-magic"></i> رشّح المجلات المناسبة</button>
+          <div id="matchResults" style="margin-top:16px"></div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-input grow"><i class="bi bi-search"></i><input id="journalSearch" placeholder="بحث في المجلات"></div>
+          <button class="btn" id="addJournalBtn"><i class="bi bi-plus-lg"></i> إضافة مجلة</button>
+          <button class="btn ghost" id="importBtn"><i class="bi bi-upload"></i> رفع CSV/Excel</button>
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none">
+        </div>
+        <p class="muted-note" style="margin-top:-6px">الأعمدة المدعومة في الملف: name, wos, scopus, quartile, category, publishDuration, wordLimit, citationStyle, scope, email, url — أو ترويسات عربية مكافئة.</p>
+        <div id="journalsList"></div>
+      </section>
+
+      <!-- ============ التنبيهات ============ -->
+      <section class="view" id="view-alerts">
+        <h2 class="section-title"><i class="bi bi-bell"></i> التنبيهات</h2>
+        <p class="section-sub">عند ورود ملاحظة أو رد من مجلة، سجّلها من نافذة البحث؛ يبقى التنبيه ظاهرًا حتى تردّ عليه وتغلقه.</p>
+        <div id="alertsList"></div>
+      </section>
+
+      <!-- ============ الإعدادات ============ -->
+      <section class="view" id="view-settings">
+        <h2 class="section-title"><i class="bi bi-gear"></i> الإعدادات</h2>
+
+        <div class="card" style="margin-bottom:18px">
+          <h3 style="margin:0 0 14px"><i class="bi bi-person"></i> الملف الشخصي والبريد</h3>
+          <div class="form-grid">
+            <label class="field"><span>الاسم الظاهر</span><input id="set_display"></label>
+            <label class="field"><span>البريد الأكاديمي</span><input id="set_academic" type="email" dir="ltr"></label>
+            <label class="field"><span>البريد الخاص</span><input id="set_personal" type="email" dir="ltr"></label>
+          </div>
+          <button class="btn" id="saveProfileBtn"><i class="bi bi-check-lg"></i> حفظ الملف الشخصي</button>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <h3 style="margin:0 0 8px"><i class="bi bi-stars" style="color:var(--accent)"></i> مفتاح Claude API</h3>
+          <p class="muted-note" style="margin-top:0">يُستخدم للترشيح الذكي بنموذج Claude. يُخزَّن على جهازك فقط. اتركه فارغًا لاستخدام التحليل المحلي.</p>
+          <label class="field"><span>المفتاح (sk-ant-…)</span><input id="set_apikey" type="password" dir="ltr" placeholder="sk-ant-..."></label>
+          <button class="btn" id="saveApiKeyBtn"><i class="bi bi-key"></i> حفظ المفتاح</button>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <h3 style="margin:0 0 14px"><i class="bi bi-shield-lock"></i> تغيير الرقم السري</h3>
+          <div class="form-grid">
+            <label class="field"><span>الرقم السري الحالي</span><input id="set_oldpass" type="password"></label>
+            <label class="field"><span>الرقم السري الجديد</span><input id="set_newpass" type="password"></label>
+          </div>
+          <button class="btn" id="changePassBtn"><i class="bi bi-arrow-repeat"></i> تغيير</button>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <h3 style="margin:0 0 14px"><i class="bi bi-palette"></i> المظهر</h3>
+          <label class="field" style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="themeToggle" style="width:auto">
+            <span style="margin:0">الوضع الليلي (مريح للعين في الإضاءة المنخفضة)</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <h3 style="margin:0 0 8px"><i class="bi bi-database"></i> النسخ الاحتياطي والبيانات</h3>
+          <p class="muted-note" style="margin-top:0">بياناتك محفوظة محليًا على هذا الجهاز. صدّرها لنقلها بين جوالك والكمبيوتر.</p>
+          <div class="toolbar" style="margin-bottom:0">
+            <button class="btn ghost" id="exportBtn"><i class="bi bi-download"></i> تصدير نسخة احتياطية</button>
+            <button class="btn ghost" id="importDataBtn"><i class="bi bi-upload"></i> استيراد نسخة</button>
+            <input type="file" id="dataFileInput" accept=".json" style="display:none">
+          </div>
+        </div>
+      </section>
+
     </main>
-    <footer>
-        &copy; 2025 المؤتمر السعودي الدولي للقانون الرياضي - جميع الحقوق محفوظة
-    </footer>
-    <script>
-        // تفعيل شكر بعد الضغط على التسجيل
-        function showThanks() {
-            document.getElementById('thanks').style.display = 'block';
-            setTimeout(function(){
-                document.getElementById('thanks').style.display = 'none';
-            }, 3400);
-        }
-        // تنشيط علامة التبويب الحالية في القائمة
-        document.querySelectorAll('nav a').forEach(function(link){
-            link.onclick = function() {
-                document.querySelectorAll('nav a').forEach(function(l){
-                    l.classList.remove('active');
-                });
-                this.classList.add('active');
-            }
-        });
-    </script>
+  </div>
+
+  <!-- النوافذ المنبثقة والتوست -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- السكربتات -->
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/matcher.js"></script>
+  <script src="js/importer.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
