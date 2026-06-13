@@ -23,6 +23,41 @@
     return Math.floor((Date.now() - d.getTime()) / 86400000);
   }
 
+  // أكبر عدد أشهر مذكور في نص مدة النشر (مثال: "3-6 أشهر" => 6)
+  function expectedDays(durationText) {
+    if (!durationText) return null;
+    const s = String(durationText);
+    const nums = (s.match(/\d+/g) || []).map(Number);
+    if (!nums.length) return null;
+    const max = Math.max.apply(null, nums);
+    // أسابيع أو أشهر
+    if (/أسبوع|اسبوع|week/i.test(s)) return max * 7;
+    return max * 30; // الافتراض أشهر
+  }
+
+  // بيانات متابعة زمنية واضحة لبحث قيد التقييم/المراجعة
+  function trackingInfo(p) {
+    const inPipeline = ['submitted', 'review', 'revision', 'accepted'].includes(p.status);
+    if (!inPipeline || !p.submittedDate) return null;
+    const days = daysSince(p.submittedDate);
+    if (days == null) return null;
+    const journal = p.journalId ? Store.getJournal(p.journalId) : null;
+    const exp = journal ? expectedDays(journal.publishDuration) : null;
+    let pct = null, late = false;
+    if (exp) {
+      pct = Math.min(100, Math.round((days / exp) * 100));
+      late = days > exp;
+    }
+    const level = late ? 'late' : (days >= 14 ? 'warn' : '');
+    return { days, exp, pct, late, level };
+  }
+
+  function trackChip(p) {
+    const t = trackingInfo(p);
+    if (!t) return '';
+    return '<span class="track ' + t.level + '"><i class="bi bi-hourglass-split"></i> منذ التسليم: ' + t.days + ' يوم</span>';
+  }
+
   function toast(msg, kind) {
     const wrap = $('#toastWrap');
     const t = document.createElement('div');
@@ -138,8 +173,16 @@
       dailyMsg = '<strong>' + stale.length + '</strong> بحث/أبحاث قيد التقييم لم تتحدّث منذ أسبوعين أو أكثر — قد يستحق المتابعة مع المجلة.';
     }
     const today = new Date().toLocaleDateString('ar-SA-u-ca-gregory', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    // توزيع يومي مختصر على الحالات المعتمدة
+    const stagesHtml = papers.length ? '<div class="daily-stages">' + Store.STATUS_ORDER
+      .filter(s => byStatus[s])
+      .map(s => {
+        const st = Store.STATUSES[s];
+        return '<span class="ds"><span class="dsdot" style="background:' + st.color + '"></span>' +
+          esc(st.label) + ' <b>' + byStatus[s] + '</b></span>';
+      }).join('') + '</div>' : '';
     $('#dailyBanner').innerHTML =
-      '<i class="bi bi-calendar2-check"></i><div><h3>الحالة اليومية — ' + esc(today) + '</h3><p>' + dailyMsg + '</p></div>';
+      '<i class="bi bi-calendar2-check"></i><div style="flex:1"><h3>الحالة اليومية — ' + esc(today) + '</h3><p>' + dailyMsg + '</p>' + stagesHtml + '</div>';
 
     // الأعمدة الأربع المطلوبة
     const cols = [
@@ -183,6 +226,7 @@
       '<div class="m">' +
       '<span class="badge" style="background:' + st.color + '">' + esc(st.label) + '</span>' +
       (p.journalName ? '<span class="latin">' + esc(p.journalName) + '</span>' : '') +
+      trackChip(p) +
       (hasAlert ? '<span class="alert-flag"><i class="bi bi-bell-fill"></i> ملاحظة بانتظار الرد</span>' : '') +
       '</div></div>';
   }
@@ -232,7 +276,7 @@
           (hasAlert ? ' <span class="alert-flag" style="color:var(--danger)"><i class="bi bi-bell-fill"></i></span>' : '') + '</td>' +
           '<td><span class="badge" style="background:' + st.color + '">' + esc(st.label) + '</span></td>' +
           '<td class="latin">' + esc(p.journalName || '—') + '</td>' +
-          '<td>' + fmtDate(p.submittedDate) + '</td>' +
+          '<td>' + fmtDate(p.submittedDate) + (trackChip(p) ? '<br>' + trackChip(p) : '') + '</td>' +
           '<td>' + fmtDate(p.lastUpdate) + '</td>' +
           '<td class="row-actions">' +
           '<button class="btn ghost sm" data-open="' + p.id + '"><i class="bi bi-eye"></i></button>' +
@@ -283,6 +327,7 @@
         '<label class="field full"><span>الكلمات المفتاحية</span><input id="pm_keywords" value="' + esc(p ? p.keywords : '') + '" placeholder="مفصولة بفواصل"></label>' +
         '<label class="field full"><span>الملخص</span><textarea id="pm_abstract" placeholder="ملخص المقال (يُستخدم في الترشيح بالذكاء الاصطناعي)">' + esc(p ? p.abstract : '') + '</textarea></label>' +
       '</div>' +
+      (p ? renderTrackingBlock(p) : '') +
       (p ? renderPaperTimeline(p) : '');
 
     const footExtra = p ?
@@ -323,6 +368,26 @@
         }
       }
     });
+  }
+
+  function renderTrackingBlock(p) {
+    const t = trackingInfo(p);
+    if (!t) return '';
+    let html = '<div class="card" style="margin-top:18px;padding:14px">' +
+      '<h3 style="margin:0 0 8px;font-size:1rem"><i class="bi bi-stopwatch" style="color:var(--primary)"></i> بيانات المتابعة</h3>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<span class="track ' + t.level + '"><i class="bi bi-hourglass-split"></i> منذ التسليم: ' + t.days + ' يوم</span>' +
+      (t.exp ? '<span class="track"><i class="bi bi-calendar-range"></i> المدة المتوقعة للنشر: ~' + t.exp + ' يوم</span>' : '') +
+      '</div>';
+    if (t.exp) {
+      html += '<div class="progress-track"><div class="pt-bar"><div class="pt-fill' + (t.late ? ' late' : '') +
+        '" style="width:' + t.pct + '%"></div></div>' +
+        '<div class="pt-label">' + (t.late
+          ? 'تجاوزت المدة المتوقعة — يُنصح بمتابعة المجلة.'
+          : 'مضى ' + t.pct + '% من المدة المتوقعة للنشر في هذه المجلة.') + '</div></div>';
+    }
+    html += '</div>';
+    return html;
   }
 
   function renderPaperTimeline(p) {
@@ -664,11 +729,33 @@
   }
   $('#alertBellBtn').addEventListener('click', () => switchTab('alerts'));
 
+  // التنبيه المستمر الثابت أعلى كل التبويبات — يبقى حتى الرد على كل الملاحظات
+  function renderPersistentAlert() {
+    const active = Store.getActiveAlerts();
+    const bar = $('#persistentAlert');
+    if (!active.length) { bar.style.display = 'none'; return; }
+    const first = active[0];
+    const paper = first.paperId ? Store.getPaper(first.paperId) : null;
+    const more = active.length - 1;
+    $('#persistentAlertBody').innerHTML =
+      '<strong>ملاحظة بانتظار الرد:</strong> ' + esc(first.message.slice(0, 90)) +
+      (first.message.length > 90 ? '…' : '') +
+      (paper ? ' <span class="muted-note">(' + esc(paper.title) + ')</span>' : '') +
+      (more > 0 ? ' <span class="muted-note">و' + more + ' تنبيه آخر</span>' : '');
+    bar.style.display = 'flex';
+    bar.dataset.alertId = first.id;
+  }
+  $('#persistentAlertBtn').addEventListener('click', () => {
+    const id = $('#persistentAlert').dataset.alertId;
+    if (id) openReplyModal(id); else switchTab('alerts');
+  });
+
   // ===========================================================
   //  تحديث شامل
   // ===========================================================
   function renderAll() {
     renderAlertBadge();
+    renderPersistentAlert();
     const active = $('.tabs button.active');
     const tab = active ? active.dataset.tab : 'dashboard';
     if (tab === 'dashboard') renderDashboard();
