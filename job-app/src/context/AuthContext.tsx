@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { jobPlatforms } from '../data/platforms';
 
 export interface AppUser {
   name: string;
@@ -7,6 +8,9 @@ export interface AppUser {
   regionId?: string;
   educationLevelId?: string;
   specialization?: string;
+  experienceYears?: number;
+  experienceText?: string;
+  cvFileName?: string;
 }
 
 export interface CvState {
@@ -47,6 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp: (data) => {
         setRegistry((r) => ({ ...r, [data.email.toLowerCase()]: data }));
         setUser(data);
+        if (data.cvFileName) {
+          setCv({ uploaded: true, fileName: data.cvFileName, analyzed: true });
+        }
+        // The app "pulls" listings from all known platforms automatically.
+        setConnected(jobPlatforms.map((p) => p.id));
       },
       signIn: (email) => {
         const known = registry[email.toLowerCase()];

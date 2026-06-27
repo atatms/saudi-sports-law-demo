@@ -66,7 +66,7 @@ export default function WelcomeScreen({ navigation }: Props) {
           </View>
         ))}
 
-        <Button label={L('إنشاء حساب جديد', 'Create account')} onPress={() => navigation.navigate('Register')} style={{ marginTop: spacing.md }} />
+        <Button label={L('ابدأ — أنشئ ملفك المهني', 'Start — build your profile')} onPress={() => navigation.navigate('Register')} style={{ marginTop: spacing.md }} />
         <Button
           label={L('لديّ حساب — تسجيل الدخول', 'I have an account — Sign in')}
           variant="outline"

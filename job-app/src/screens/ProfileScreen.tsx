@@ -33,7 +33,7 @@ interface Row {
 }
 
 export default function ProfileScreen({ navigation }: Props) {
-  const { user, connectedPlatformIds, signOut } = useAuth();
+  const { user, connectedPlatformIds, cv, signOut } = useAuth();
   const { L, isRTL, lang, toggle } = useLang();
   const row = isRTL ? 'row-reverse' : 'row';
   const ta = isRTL ? 'right' : 'left';
@@ -44,16 +44,31 @@ export default function ProfileScreen({ navigation }: Props) {
     .filter(Boolean)
     .join(' · ');
 
+  const cvName = cv.fileName || user?.cvFileName;
   const infoRows: Row[] = [
-    { icon: 'document-text-outline', title: L('السيرة الذاتية', 'Resume'), value: profile.resumeFile, onPress: () => navigation.navigate('ResumeAnalyzer') },
+    {
+      icon: 'document-text-outline',
+      title: L('السيرة الذاتية', 'Resume'),
+      value: cvName || L('لم تُرفع — اضغط للرفع', 'Not uploaded — tap to upload'),
+      warn: !cvName,
+      onPress: () => navigation.navigate(cvName ? 'ResumeAnalyzer' : 'UploadCv'),
+    },
     {
       icon: 'git-network-outline',
       title: L('المنصات المرتبطة', 'Linked platforms'),
       value: `${connectedPlatformIds.length} / ${jobPlatforms.length}`,
       onPress: () => navigation.navigate('ConnectPlatforms'),
     },
-    { icon: 'school-outline', title: L('المؤهل العلمي', 'Education level'), value: edu ? L(edu.ar, edu.en) : L('غير محدد', 'Not set') },
+    { icon: 'school-outline', title: L('الدرجة العلمية', 'Education level'), value: edu ? L(edu.ar, edu.en) : L('غير محدد', 'Not set') },
     { icon: 'ribbon-outline', title: L('التخصص', 'Field of study'), value: user?.specialization || L('غير محدد', 'Not set') },
+    {
+      icon: 'briefcase-outline',
+      title: L('الخبرة', 'Experience'),
+      value:
+        user?.experienceYears != null
+          ? L(`${user.experienceYears} سنوات${user.experienceText ? ` · ${user.experienceText}` : ''}`, `${user.experienceYears} yrs${user.experienceText ? ` · ${user.experienceText}` : ''}`)
+          : L('غير محددة', 'Not set'),
+    },
     { icon: 'location-outline', title: L('المنطقة', 'Region'), value: region?.name || L('غير محددة', 'Not set') },
     { icon: 'mail-outline', title: L('البريد الإلكتروني', 'Email'), value: user?.email },
   ];

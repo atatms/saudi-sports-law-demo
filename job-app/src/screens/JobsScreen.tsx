@@ -62,6 +62,10 @@ export default function JobsScreen({ navigation, route }: Props) {
     .filter((p) => connectedPlatformIds.includes(p.id))
     .map((p) => p.name);
 
+  // A job suits the applicant when its required experience is within reach.
+  const suits = (jobYears: number) =>
+    user?.experienceYears == null ? true : jobYears <= user.experienceYears + 1;
+
   const filtered = useMemo(() => {
     return fromConnected
       .filter((j) => (regionId === ALL_REGIONS_ID ? true : j.regionId === regionId))
@@ -71,8 +75,14 @@ export default function JobsScreen({ navigation, route }: Props) {
           ? true
           : `${j.title} ${j.company} ${j.city}`.includes(query.trim()),
       )
-      .sort((a, b) => b.matchScore - a.matchScore);
-  }, [fromConnected, regionId, mode, query]);
+      // Suitable-by-experience first, then by AI match score.
+      .sort((a, b) => {
+        const sa = suits(a.experienceYears) ? 1 : 0;
+        const sb = suits(b.experienceYears) ? 1 : 0;
+        if (sa !== sb) return sb - sa;
+        return b.matchScore - a.matchScore;
+      });
+  }, [fromConnected, regionId, mode, query, user?.experienceYears]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -140,12 +150,12 @@ export default function JobsScreen({ navigation, route }: Props) {
           ))}
         </ScrollView>
 
-        {/* Tailoring line by the user's degree + field */}
-        {user?.specialization ? (
+        {/* Tailoring line by the user's degree + field + experience */}
+        {(user?.specialization || user?.experienceYears != null) ? (
           <Text style={[styles.tailor, { textAlign: isRTL ? 'right' : 'left' }]}>
             {L(
-              `مقترحة لتخصص «${user.specialization}»`,
-              `Tailored to your field "${user.specialization}"`,
+              `مقترحة بناءً على ${user?.specialization ? `تخصص «${user.specialization}»` : 'ملفك'}${user?.experienceYears != null ? ` و${user.experienceYears} سنوات خبرة` : ''}`,
+              `Based on ${user?.specialization ? `"${user.specialization}"` : 'your profile'}${user?.experienceYears != null ? ` and ${user.experienceYears} yrs experience` : ''}`,
             )}
           </Text>
         ) : null}

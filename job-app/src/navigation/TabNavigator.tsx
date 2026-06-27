@@ -42,6 +42,7 @@ export default function TabNavigator() {
   const LABELS = lang === 'ar' ? LABELS_AR : LABELS_EN;
   return (
     <Tab.Navigator
+      initialRouteName="Jobs"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
