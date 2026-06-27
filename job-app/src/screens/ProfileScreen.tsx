@@ -10,6 +10,8 @@ import Card from '../components/Card';
 import Chip from '../components/Chip';
 import { colors, font, radius, spacing } from '../theme';
 import { profile } from '../data/profile';
+import { jobPlatforms } from '../data/platforms';
+import { useAuth } from '../context/AuthContext';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 
 type Props = CompositeScreenProps<
@@ -33,8 +35,16 @@ interface SettingRow {
 }
 
 export default function ProfileScreen({ navigation }: Props) {
+  const { user, connectedPlatformIds, signOut } = useAuth();
+
   const infoRows: InfoRow[] = [
     { icon: 'document-text-outline', title: 'السيرة الذاتية', value: profile.resumeFile, onPress: () => navigation.navigate('ResumeAnalyzer') },
+    {
+      icon: 'git-network-outline',
+      title: 'المنصات المرتبطة',
+      value: `${connectedPlatformIds.length} من ${jobPlatforms.length} منصة`,
+      onPress: () => navigation.navigate('ConnectPlatforms'),
+    },
     { icon: 'school-outline', title: 'التعليم', value: profile.education },
     { icon: 'briefcase-outline', title: 'الخبرة', value: profile.experience },
     { icon: 'link-outline', title: 'رابط معرض الأعمال', value: profile.portfolioLinked ? 'مُضاف' : 'لم يُضف — اضغط للإضافة', warn: !profile.portfolioLinked },
@@ -56,7 +66,7 @@ export default function ProfileScreen({ navigation }: Props) {
           <View style={styles.avatarBig}>
             <Ionicons name="person" size={34} color={colors.white} />
           </View>
-          <Text style={styles.name}>{profile.name}</Text>
+          <Text style={styles.name}>{user?.name ?? profile.name}</Text>
           <Text style={styles.role}>{profile.title} · {profile.location}</Text>
           <TouchableOpacity style={styles.editBtn} activeOpacity={0.85}>
             <Text style={styles.editText}>تحرير الملف</Text>
@@ -135,7 +145,7 @@ export default function ProfileScreen({ navigation }: Props) {
             ))}
           </Card>
 
-          <TouchableOpacity style={styles.logout} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.logout} activeOpacity={0.85} onPress={signOut}>
             <Text style={styles.logoutText}>تسجيل الخروج</Text>
           </TouchableOpacity>
         </View>

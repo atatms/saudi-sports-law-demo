@@ -22,19 +22,25 @@ function CourseCard({ course }: { course: Course }) {
   return (
     <Card style={styles.courseCard}>
       <View style={styles.courseTop}>
-        {course.required ? (
-          <View style={styles.requiredBadge}>
-            <Text style={styles.requiredText}>مطلوبة</Text>
-          </View>
-        ) : (
-          <View />
-        )}
+        <View style={styles.topBadges}>
+          {course.free ? (
+            <View style={[styles.smallBadge, { backgroundColor: colors.successBg }]}>
+              <Text style={[styles.smallBadgeText, { color: colors.primary }]}>مجانية</Text>
+            </View>
+          ) : null}
+          {course.required ? (
+            <View style={styles.requiredBadge}>
+              <Text style={styles.requiredText}>مطلوبة</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.courseTitle}>{course.title}</Text>
       </View>
 
       <View style={styles.courseMeta}>
         <Chip label={`${course.hours} ساعات`} icon="time-outline" />
         <Chip label={LEVEL_LABEL[course.level]} icon="bar-chart-outline" />
+        {course.certificate ? <Chip label="شهادة معتمدة" icon="ribbon-outline" /> : null}
       </View>
 
       <View style={styles.courseFooter}>
@@ -107,6 +113,9 @@ const styles = StyleSheet.create({
   courseCard: { marginBottom: spacing.md },
   courseTop: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   courseTitle: { flex: 1, fontSize: font.h3, fontWeight: '800', color: colors.text, textAlign: 'right', writingDirection: 'rtl' },
+  topBadges: { flexDirection: 'row-reverse', gap: 6 },
+  smallBadge: { borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 4 },
+  smallBadgeText: { fontSize: font.tiny, fontWeight: '800', writingDirection: 'rtl' },
   requiredBadge: { backgroundColor: colors.accentSoft, borderRadius: radius.sm, paddingHorizontal: 10, paddingVertical: 4 },
   requiredText: { color: colors.accentText, fontSize: font.tiny, fontWeight: '700', writingDirection: 'rtl' },
   courseMeta: { flexDirection: 'row-reverse', gap: 6, marginTop: spacing.md },

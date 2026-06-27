@@ -20,6 +20,17 @@ export interface Job {
   aiRequirementsTotal: number;
   betterThan: number; // "أفضل x5 من المتقدمين"
   companyAbout: string;
+  sourceId: string; // id of the job platform the listing came from (LinkedIn, Bayt, ...)
+  isNew?: boolean; // newly fetched since last visit
+}
+
+export interface JobPlatform {
+  id: string;
+  name: string; // Arabic display name
+  nameEn: string;
+  color: string;
+  initials: string; // shown in the avatar tile
+  description: string;
 }
 
 export type ApplicationStage =
@@ -59,6 +70,9 @@ export interface Course {
   hours: number;
   level: CourseLevel;
   required: boolean;
+  free?: boolean; // مجانية
+  certificate?: boolean; // تمنح شهادة معتمدة
+  skill?: string; // the skill this course closes the gap on
 }
 
 export interface AtsPlatform {

@@ -104,8 +104,12 @@ export default function JobDetailsScreen({ route, navigation }: Props) {
           <Text style={styles.applyPrice}>{job.salary.toLocaleString('en-US')} ريال</Text>
           <Text style={styles.applyMonthly}>شهرياً</Text>
         </View>
-        <TouchableOpacity style={styles.applyBtn} activeOpacity={0.85}>
-          <Text style={styles.applyText}>قدم الآن</Text>
+        <TouchableOpacity
+          style={styles.applyBtn}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('UploadCv', { jobId: job.id })}
+        >
+          <Text style={styles.applyText}>قدّم بسيرتك الذاتية</Text>
         </TouchableOpacity>
       </View>
     </View>

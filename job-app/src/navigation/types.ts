@@ -1,5 +1,11 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
+export type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
 export type TabParamList = {
   Home: undefined;
   Jobs: { regionId?: string } | undefined;
@@ -13,4 +19,6 @@ export type RootStackParamList = {
   JobDetails: { jobId: string };
   ResumeAnalyzer: undefined;
   Ats: undefined;
+  ConnectPlatforms: undefined;
+  UploadCv: { jobId?: string } | undefined;
 };

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -12,7 +13,9 @@ import RegionDropdown from '../components/RegionDropdown';
 import { colors, font, radius, spacing } from '../theme';
 import { jobs as allJobs } from '../data/jobs';
 import { ALL_REGIONS_ID } from '../data/regions';
+import { jobPlatforms } from '../data/platforms';
 import { WorkMode } from '../data/types';
+import { useAuth } from '../context/AuthContext';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 
 type Props = CompositeScreenProps<
@@ -31,6 +34,7 @@ const MODE_FILTERS: { id: ModeFilter; label: string }[] = [
 ];
 
 export default function JobsScreen({ navigation, route }: Props) {
+  const { connectedPlatformIds } = useAuth();
   const [regionId, setRegionId] = useState<string>(route.params?.regionId ?? ALL_REGIONS_ID);
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<ModeFilter>('all');
@@ -38,8 +42,18 @@ export default function JobsScreen({ navigation, route }: Props) {
     Object.fromEntries(allJobs.map((j) => [j.id, j.saved])),
   );
 
+  // Only jobs coming from platforms the user has linked appear in the feed.
+  const fromConnected = useMemo(
+    () => allJobs.filter((j) => connectedPlatformIds.includes(j.sourceId)),
+    [connectedPlatformIds],
+  );
+  const newCount = fromConnected.filter((j) => j.isNew).length;
+  const connectedNames = jobPlatforms
+    .filter((p) => connectedPlatformIds.includes(p.id))
+    .map((p) => p.name);
+
   const filtered = useMemo(() => {
-    return allJobs
+    return fromConnected
       .filter((j) => (regionId === ALL_REGIONS_ID ? true : j.regionId === regionId))
       .filter((j) => (mode === 'all' ? true : mode === 'highpay' ? j.salary >= 15000 : j.workMode === mode))
       .filter((j) =>
@@ -48,12 +62,30 @@ export default function JobsScreen({ navigation, route }: Props) {
           : `${j.title} ${j.company} ${j.city}`.includes(query.trim()),
       )
       .sort((a, b) => b.matchScore - a.matchScore);
-  }, [regionId, mode, query]);
+  }, [fromConnected, regionId, mode, query]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.headerArea}>
         <Text style={styles.title}>اكتشف الوظائف</Text>
+
+        {/* Connected-platforms banner */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.connBanner}
+          onPress={() => navigation.navigate('ConnectPlatforms')}
+        >
+          <Icon name="chevron-back" size={18} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.connTitle}>
+              {newCount} وظيفة جديدة من منصاتك المرتبطة
+            </Text>
+            <Text style={styles.connSub} numberOfLines={1}>
+              {connectedNames.length > 0 ? connectedNames.join('، ') : 'لا توجد منصات مرتبطة — اضغط للربط'}
+            </Text>
+          </View>
+          <Icon name="git-network-outline" size={18} color={colors.primary} />
+        </TouchableOpacity>
 
         {/* Search */}
         <View style={styles.searchRow}>
@@ -131,6 +163,19 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   headerArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   title: { fontSize: font.h1, fontWeight: '800', color: colors.text, textAlign: 'right', writingDirection: 'rtl' },
+
+  connBanner: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginTop: spacing.md,
+  },
+  connTitle: { fontSize: font.small, fontWeight: '800', color: colors.primaryDark, textAlign: 'right', writingDirection: 'rtl' },
+  connSub: { fontSize: font.tiny, color: colors.primary, textAlign: 'right', marginTop: 2, writingDirection: 'rtl' },
 
   searchRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
   searchBox: {

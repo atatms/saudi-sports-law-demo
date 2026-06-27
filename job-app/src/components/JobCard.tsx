@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '../data/types';
 import { colors, font, radius, spacing, shadow } from '../theme';
 import { formatSalary, workModeLabel, workModeIcon, matchColor } from '../utils/format';
+import { getPlatformById } from '../data/platforms';
 import Avatar from './Avatar';
 import Chip from './Chip';
 
@@ -17,6 +18,7 @@ interface Props {
 
 /** Job listing card matching the "اكتشف الوظائف" / home design. */
 export default function JobCard({ job, onPress, onApply, onToggleSave, primaryLabel }: Props) {
+  const platform = getPlatformById(job.sourceId);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[styles.card, shadow.card]}>
       <View style={styles.header}>
@@ -33,6 +35,23 @@ export default function JobCard({ job, onPress, onApply, onToggleSave, primaryLa
           <Text style={[styles.matchPct, { color: matchColor(job.matchScore) }]}>{job.matchScore}%</Text>
           <Text style={styles.matchWord}>تطابق</Text>
         </View>
+      </View>
+
+      {/* Source platform + new flag */}
+      <View style={styles.sourceRow}>
+        {platform ? (
+          <View style={styles.sourcePill}>
+            <View style={[styles.sourceDot, { backgroundColor: platform.color }]} />
+            <Text style={styles.sourceText}>عبر {platform.name}</Text>
+          </View>
+        ) : (
+          <View />
+        )}
+        {job.isNew ? (
+          <View style={styles.newBadge}>
+            <Text style={styles.newText}>جديد</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.tags}>
@@ -71,6 +90,12 @@ const styles = StyleSheet.create({
   matchBadge: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm },
   matchPct: { fontSize: font.body, fontWeight: '800' },
   matchWord: { fontSize: font.tiny, color: colors.textMuted },
+  sourceRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
+  sourcePill: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  sourceDot: { width: 8, height: 8, borderRadius: 4 },
+  sourceText: { fontSize: font.tiny, color: colors.textMuted, fontWeight: '600', writingDirection: 'rtl' },
+  newBadge: { backgroundColor: colors.goldSoft, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 2 },
+  newText: { fontSize: font.tiny, color: colors.gold, fontWeight: '800', writingDirection: 'rtl' },
   tags: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6, marginTop: spacing.md },
   actions: { flexDirection: 'row-reverse', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
   saveBtn: {

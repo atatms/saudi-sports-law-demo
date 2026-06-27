@@ -18,6 +18,8 @@ export const jobs: Job[] = [
     betterThan: 5,
     aiRequirementsMet: 8,
     aiRequirementsTotal: 10,
+    sourceId: 'linkedin',
+    isNew: true,
     about:
       'قُد تطوير المنتج لمنصة SaaS المؤسسية لأرامكو ديجيتال. ستملك خارطة الطريق، وتعمل مع الهندسة والتصميم لدفع النمو في سوق B2B السعودي.',
     requirements: [
@@ -48,6 +50,8 @@ export const jobs: Job[] = [
     betterThan: 4,
     aiRequirementsMet: 7,
     aiRequirementsTotal: 10,
+    sourceId: 'taqat',
+    isNew: true,
     about:
       'قُد فريق تصميم تجربة المستخدم لمنتجات STC الرقمية، وارسم رؤية التصميم عبر التطبيقات والخدمات.',
     requirements: [
@@ -76,6 +80,8 @@ export const jobs: Job[] = [
     betterThan: 3,
     aiRequirementsMet: 6,
     aiRequirementsTotal: 10,
+    sourceId: 'linkedin',
+    isNew: true,
     about:
       'اعمل على دمج الذكاء الاصطناعي في منتجات نيوم المستقبلية، ضمن مدينة المستقبل.',
     requirements: [
@@ -103,6 +109,7 @@ export const jobs: Job[] = [
     betterThan: 2,
     aiRequirementsMet: 6,
     aiRequirementsTotal: 10,
+    sourceId: 'bayt',
     about:
       'قُد مبادرات النمو لمنصة تمارا للدفع الآجل، وحسّن مسار اكتساب وتفعيل المستخدمين.',
     requirements: [
@@ -129,6 +136,7 @@ export const jobs: Job[] = [
     betterThan: 2,
     aiRequirementsMet: 5,
     aiRequirementsTotal: 10,
+    sourceId: 'mihnati',
     about: 'صمّم تجارب رقمية لمنصة سلة للتجارة الإلكترونية.',
     requirements: [
       '2+ سنوات في تصميم المنتجات',
@@ -154,6 +162,7 @@ export const jobs: Job[] = [
     betterThan: 3,
     aiRequirementsMet: 6,
     aiRequirementsTotal: 10,
+    sourceId: 'taqat',
     about:
       'حوّل البيانات إلى رؤى تدعم القرارات في أكبر بنك سعودي، باستخدام SQL وأدوات التحليل.',
     requirements: [
@@ -180,6 +189,7 @@ export const jobs: Job[] = [
     betterThan: 2,
     aiRequirementsMet: 5,
     aiRequirementsTotal: 10,
+    sourceId: 'indeed',
     about: 'طوّر حلولاً رقمية حكومية على نطاق وطني ضمن فرق علم التقنية.',
     requirements: [
       '5+ سنوات في تطوير البرمجيات',
@@ -205,6 +215,7 @@ export const jobs: Job[] = [
     betterThan: 1,
     aiRequirementsMet: 5,
     aiRequirementsTotal: 10,
+    sourceId: 'glassdoor',
     about: 'أدر حملات التسويق الرقمي لمنصة نون للتجارة الإلكترونية.',
     requirements: [
       '3+ سنوات في التسويق الرقمي',
