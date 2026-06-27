@@ -30,6 +30,9 @@
     },
     "extra": {
       "supportsRTL": true
+    },
+    "experiments": {
+      "baseUrl": "/saudi-sports-law-demo"
     }
   }
 }
