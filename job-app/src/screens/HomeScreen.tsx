@@ -13,6 +13,8 @@ import JobCard from '../components/JobCard';
 import { colors, font, radius, spacing, shadow } from '../theme';
 import { homeStats, profile } from '../data/profile';
 import { jobs } from '../data/jobs';
+import { getRegionById } from '../data/regions';
+import { getEducationLevel } from '../data/education';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { RootStackParamList, TabParamList } from '../navigation/types';
@@ -23,12 +25,23 @@ type Props = CompositeScreenProps<
 >;
 
 export default function HomeScreen({ navigation }: Props) {
-  const { user } = useAuth();
+  const { user, cv } = useAuth();
   const { L, isRTL } = useLang();
   const topMatches = [...jobs].sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
   const firstName = (user?.name ?? '').split(' ')[0] || L('بك', 'there');
   const ta = isRTL ? 'right' : 'left';
   const row = isRTL ? 'row-reverse' : 'row';
+
+  const edu = getEducationLevel(user?.educationLevelId);
+  const region = getRegionById(user?.regionId);
+  const cvName = cv.fileName || user?.cvFileName;
+  const profileFacts: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [
+    { icon: 'school-outline', label: L('الدرجة العلمية', 'Degree'), value: edu ? L(edu.ar, edu.en) : L('غير محدد', 'Not set') },
+    { icon: 'ribbon-outline', label: L('التخصص', 'Field'), value: user?.specialization || L('غير محدد', 'Not set') },
+    { icon: 'briefcase-outline', label: L('الخبرة', 'Experience'), value: user?.experienceYears != null ? L(`${user.experienceYears} سنوات`, `${user.experienceYears} yrs`) : L('غير محددة', 'Not set') },
+    { icon: 'location-outline', label: L('المنطقة', 'Region'), value: region?.name || L('غير محددة', 'Not set') },
+    { icon: 'document-text-outline', label: L('السيرة الذاتية', 'CV'), value: cvName || L('لم تُرفع', 'Not uploaded') },
+  ];
 
   return (
     <Screen>
@@ -42,9 +55,14 @@ export default function HomeScreen({ navigation }: Props) {
               : L('مراجعتك الأسبوعية للوظائف جاهزة', 'Your weekly job review is ready')}
           </Text>
         </View>
-        <View style={styles.dot}>
+        <TouchableOpacity
+          style={styles.dot}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Profile')}
+          accessibilityLabel={L('فتح ملفي', 'Open my profile')}
+        >
           <Ionicons name="person" size={20} color={colors.white} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* AI banner */}
@@ -62,6 +80,35 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
         <Ionicons name="sparkles" size={18} color={colors.white} />
       </TouchableOpacity>
+
+      {/* Applicant profile summary — reflects the data entered at sign-up */}
+      <Card style={styles.profileCard}>
+        <TouchableOpacity
+          style={[styles.profileHead, { flexDirection: row }]}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <View style={styles.profileAvatar}>
+            <Ionicons name="person" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, marginHorizontal: spacing.md }}>
+            <Text style={[styles.profileName, { textAlign: ta }]}>{user?.name ?? L('ملفي', 'My profile')}</Text>
+            <Text style={[styles.profileEmail, { textAlign: ta }]} numberOfLines={1}>{user?.email}</Text>
+          </View>
+          <Text style={styles.profileLink}>{L('عرض الملف', 'View')}</Text>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <View style={styles.factsWrap}>
+          {profileFacts.map((f) => (
+            <View key={f.label} style={[styles.factRow, { flexDirection: row }]}>
+              <Ionicons name={f.icon} size={16} color={colors.primary} />
+              <Text style={[styles.factLabel, { textAlign: ta }]}>{f.label}</Text>
+              <Text style={[styles.factValue, { textAlign: isRTL ? 'left' : 'right' }]} numberOfLines={1}>{f.value}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
 
       {/* Scores */}
       <Card style={styles.scoreCard}>
@@ -146,6 +193,17 @@ const styles = StyleSheet.create({
   bannerText: { color: colors.white, fontSize: font.body, textAlign: 'right', writingDirection: 'rtl' },
   bannerBold: { fontWeight: '800' },
   bannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: font.small, textAlign: 'right', marginTop: 2, writingDirection: 'rtl' },
+
+  profileCard: { marginTop: spacing.lg },
+  profileHead: { alignItems: 'center', paddingBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  profileAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  profileName: { fontSize: font.body, fontWeight: '800', color: colors.text },
+  profileEmail: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2 },
+  profileLink: { fontSize: font.small, color: colors.primary, fontWeight: '700' },
+  factsWrap: { marginTop: spacing.md, gap: spacing.sm },
+  factRow: { alignItems: 'center', gap: spacing.sm },
+  factLabel: { fontSize: font.small, color: colors.textMuted, width: 90 },
+  factValue: { flex: 1, fontSize: font.small, color: colors.text, fontWeight: '700' },
 
   scoreCard: { marginTop: spacing.lg, backgroundColor: colors.cardAlt },
   scoreRow: { flexDirection: 'row-reverse', alignItems: 'center' },
