@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, font, radius, spacing } from '../theme';
+import { useLang } from '../context/LanguageContext';
 
 interface Props extends TextInputProps {
   label: string;
@@ -9,15 +10,17 @@ interface Props extends TextInputProps {
 }
 
 export default function TextField({ label, icon, ...rest }: Props) {
+  const { isRTL } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
+  const ta = isRTL ? 'right' : 'left';
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.box}>
+      <Text style={[styles.label, { textAlign: ta }]}>{label}</Text>
+      <View style={[styles.box, { flexDirection: row }]}>
         {icon ? <Ionicons name={icon} size={18} color={colors.textMuted} /> : null}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { textAlign: ta }]}
           placeholderTextColor={colors.textFaint}
-          textAlign="right"
           {...rest}
         />
       </View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,62 +7,75 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Button from '../../components/Button';
 import { colors, font, radius, spacing } from '../../theme';
 import { jobPlatforms } from '../../data/platforms';
-import { useAuth } from '../../context/AuthContext';
+import { useLang } from '../../context/LanguageContext';
 import { AuthStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 export default function WelcomeScreen({ navigation }: Props) {
-  const { signInWithPlatform } = useAuth();
-  const featured = jobPlatforms.slice(0, 3);
+  const { L, isRTL, toggle, lang } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
+
+  const features = [
+    { icon: 'git-network-outline' as const, text: L('يجمع وظائف لينكدإن وبيت.كوم وطاقات في مكان واحد', 'Aggregates LinkedIn, Bayt & Taqat jobs in one place') },
+    { icon: 'document-text-outline' as const, text: L('يحلّل سيرتك الذاتية ويقيس توافقها', 'Analyzes your CV and scores its fit') },
+    { icon: 'school-outline' as const, text: L('يقترح ما يناسب مؤهلك وتخصصك من وظائف ودورات', 'Recommends jobs & courses for your degree and field') },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Language switch */}
+      <View style={[styles.langRow, { flexDirection: row }]}>
+        <Button
+          label={lang === 'ar' ? 'English' : 'العربية'}
+          variant="ghost"
+          icon="globe-outline"
+          onPress={toggle}
+          style={styles.langBtn}
+        />
+      </View>
+
       <View style={styles.hero}>
         <View style={styles.logo}>
           <Ionicons name="briefcase" size={40} color={colors.white} />
         </View>
-        <Text style={styles.brand}>وظيفة</Text>
+        <Text style={styles.brand}>{L('وظيفة', 'Wadhefa')}</Text>
         <Text style={styles.tagline}>
-          وظيفتك القادمة في مكان واحد — يجمع التطبيق إعلانات التوظيف من جميع المنصات،
-          ويحلّل سيرتك الذاتية، ويرشدك لأفضل الدورات.
+          {L(
+            'وظيفتك القادمة في مكان واحد — تطبيق يربط منصات التوظيف، ويحلّل سيرتك، ويرشدك لأفضل الفرص والدورات.',
+            'Your next job in one place — links job platforms, analyzes your CV, and guides you to the best opportunities and courses.',
+          )}
         </Text>
+
+        <View style={styles.platforms}>
+          {jobPlatforms.slice(0, 6).map((p) => (
+            <View key={p.id} style={[styles.pBadge, { backgroundColor: p.color }]}>
+              <Text style={styles.pBadgeText}>{p.initials}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.connectTitle}>سجّل الدخول عبر منصات التوظيف</Text>
-        <View style={styles.socialRow}>
-          {featured.map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={[styles.social, { borderColor: p.color }]}
-              activeOpacity={0.85}
-              onPress={() => signInWithPlatform(p.id)}
-            >
-              <View style={[styles.socialBadge, { backgroundColor: p.color }]}>
-                <Text style={styles.socialBadgeText}>{p.initials}</Text>
-              </View>
-              <Text style={styles.socialName}>{p.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {features.map((f, i) => (
+          <View key={i} style={[styles.feature, { flexDirection: row }]}>
+            <View style={styles.featureIcon}>
+              <Ionicons name={f.icon} size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left' }]}>{f.text}</Text>
+          </View>
+        ))}
 
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.or}>أو</Text>
-          <View style={styles.line} />
-        </View>
-
-        <Button label="إنشاء حساب جديد" onPress={() => navigation.navigate('Register')} />
+        <Button label={L('إنشاء حساب جديد', 'Create account')} onPress={() => navigation.navigate('Register')} style={{ marginTop: spacing.md }} />
         <Button
-          label="لديّ حساب — تسجيل الدخول"
+          label={L('لديّ حساب — تسجيل الدخول', 'I have an account — Sign in')}
           variant="outline"
           onPress={() => navigation.navigate('Login')}
           style={{ marginTop: spacing.md }}
         />
 
-        <Text style={styles.terms}>
-          بالمتابعة فإنك توافق على الشروط وسياسة الخصوصية
+        <Text style={styles.note}>
+          {L('تربط منصات التوظيف بعد الدخول من داخل حسابك.', 'Link your job platforms after signing in, from inside your account.')}
         </Text>
       </View>
     </SafeAreaView>
@@ -71,6 +84,8 @@ export default function WelcomeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.primary },
+  langRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  langBtn: { paddingVertical: 6, paddingHorizontal: 4 },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   logo: {
     width: 84,
@@ -82,39 +97,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.35)',
   },
-  brand: { fontSize: 40, fontWeight: '900', color: colors.white, marginTop: spacing.lg, writingDirection: 'rtl' },
-  tagline: {
-    fontSize: font.body,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginTop: spacing.md,
-    writingDirection: 'rtl',
-  },
-  body: {
-    backgroundColor: colors.bg,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing.xl,
-  },
-  connectTitle: { fontSize: font.small, color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md, writingDirection: 'rtl' },
-  socialRow: { flexDirection: 'row-reverse', gap: spacing.sm },
-  social: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    gap: 6,
-  },
-  socialBadge: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  socialBadgeText: { color: colors.white, fontWeight: '800', fontSize: font.tiny },
-  socialName: { fontSize: font.tiny, color: colors.text, fontWeight: '600', writingDirection: 'rtl' },
+  brand: { fontSize: 40, fontWeight: '900', color: colors.white, marginTop: spacing.lg },
+  tagline: { fontSize: font.body, color: 'rgba(255,255,255,0.9)', textAlign: 'center', lineHeight: 24, marginTop: spacing.md },
+  platforms: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
+  pBadge: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  pBadgeText: { color: colors.white, fontWeight: '800', fontSize: font.tiny },
 
-  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginVertical: spacing.lg },
-  line: { flex: 1, height: 1, backgroundColor: colors.border },
-  or: { color: colors.textMuted, fontSize: font.small },
-
-  terms: { fontSize: font.tiny, color: colors.textFaint, textAlign: 'center', marginTop: spacing.lg, writingDirection: 'rtl' },
+  body: { backgroundColor: colors.bg, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xl },
+  feature: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
+  featureIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  featureText: { flex: 1, fontSize: font.small, color: colors.text, fontWeight: '600' },
+  note: { fontSize: font.tiny, color: colors.textFaint, textAlign: 'center', marginTop: spacing.lg },
 });

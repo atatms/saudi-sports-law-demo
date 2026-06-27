@@ -11,43 +11,51 @@ import { colors, font, radius, spacing } from '../theme';
 import { jobPlatforms } from '../data/platforms';
 import { jobs } from '../data/jobs';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConnectPlatforms'>;
 
 export default function ConnectPlatformsScreen({ navigation }: Props) {
   const { connectedPlatformIds, togglePlatform } = useAuth();
+  const { L, isRTL } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
+  const ta = isRTL ? 'right' : 'left';
 
   const countFor = (id: string) => jobs.filter((j) => j.sourceId === id).length;
 
   return (
     <Screen>
-      <TopBar title="ربط منصات التوظيف" onBack={() => navigation.goBack()} />
+      <TopBar title={L('ربط منصات التوظيف', 'Link job platforms')} onBack={() => navigation.goBack()} />
 
-      <Card style={styles.infoCard}>
+      <Card style={[styles.infoCard, { flexDirection: row }]}>
         <Ionicons name="git-network-outline" size={22} color={colors.primary} />
-        <Text style={styles.infoText}>
-          اربط حساباتك في منصات التوظيف ليجمع التطبيق إعلانات الوظائف من جميع المصادر في
-          مكان واحد، ويرتّبها حسب تطابقها مع سيرتك الذاتية.
+        <Text style={[styles.infoText, { textAlign: ta }]}>
+          {L(
+            'اربط حسابك في كل منصة مرة واحدة فقط، ويسحب التطبيق إعلاناتها تلقائياً إلى مكان واحد — دون الحاجة للتسجيل في كل منصة على حدة. ثم تُرتَّب الوظائف حسب تطابقها مع مؤهلك وتخصصك وسيرتك الذاتية.',
+            'Link each platform once and the app automatically pulls its listings into one place — no need to sign up on each platform separately. Jobs are then ranked by how well they match your degree, field, and CV.',
+          )}
         </Text>
       </Card>
 
-      <Text style={styles.sectionTitle}>المنصات المتاحة</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('المنصات المتاحة', 'Available platforms')}</Text>
 
       {jobPlatforms.map((p) => {
         const connected = connectedPlatformIds.includes(p.id);
         return (
-          <Card key={p.id} style={styles.row}>
+          <Card key={p.id} style={[styles.row, { flexDirection: row }]}>
             <View style={[styles.badge, { backgroundColor: p.color }]}>
               <Text style={styles.badgeText}>{p.initials}</Text>
             </View>
             <View style={{ flex: 1, marginHorizontal: spacing.md }}>
-              <Text style={styles.name}>{p.name}</Text>
-              <Text style={styles.desc} numberOfLines={1}>{p.description}</Text>
-              <Text style={styles.count}>{countFor(p.id)} وظيفة متاحة</Text>
+              <Text style={[styles.name, { textAlign: ta }]}>{L(p.name, p.nameEn)}</Text>
+              <Text style={[styles.desc, { textAlign: ta }]} numberOfLines={1}>{p.description}</Text>
+              <Text style={[styles.count, { textAlign: ta }]}>
+                {countFor(p.id)} {L('وظيفة متاحة', 'jobs available')}
+              </Text>
             </View>
             <Button
-              label={connected ? 'مرتبط' : 'ربط'}
+              label={connected ? L('مرتبط', 'Linked') : L('ربط', 'Link')}
               variant={connected ? 'outline' : 'primary'}
               icon={connected ? 'checkmark' : 'add'}
               onPress={() => togglePlatform(p.id)}
@@ -58,7 +66,7 @@ export default function ConnectPlatformsScreen({ navigation }: Props) {
       })}
 
       <Text style={styles.footer}>
-        المنصات المرتبطة: {connectedPlatformIds.length} من {jobPlatforms.length}
+        {L('المنصات المرتبطة', 'Linked platforms')}: {connectedPlatformIds.length} / {jobPlatforms.length}
       </Text>
     </Screen>
   );

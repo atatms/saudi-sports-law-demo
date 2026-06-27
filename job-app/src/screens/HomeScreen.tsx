@@ -13,6 +13,8 @@ import JobCard from '../components/JobCard';
 import { colors, font, radius, spacing, shadow } from '../theme';
 import { homeStats, profile } from '../data/profile';
 import { jobs } from '../data/jobs';
+import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 
 type Props = CompositeScreenProps<
@@ -21,15 +23,24 @@ type Props = CompositeScreenProps<
 >;
 
 export default function HomeScreen({ navigation }: Props) {
+  const { user } = useAuth();
+  const { L, isRTL } = useLang();
   const topMatches = [...jobs].sort((a, b) => b.matchScore - a.matchScore).slice(0, 3);
+  const firstName = (user?.name ?? '').split(' ')[0] || L('بك', 'there');
+  const ta = isRTL ? 'right' : 'left';
+  const row = isRTL ? 'row-reverse' : 'row';
 
   return (
     <Screen>
       {/* Greeting */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { flexDirection: row }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>صباح الخير، أحمد</Text>
-          <Text style={styles.subGreeting}>مراجعتك الأسبوعية للوظائف جاهزة</Text>
+          <Text style={[styles.greeting, { textAlign: ta }]}>{L(`أهلاً، ${firstName}`, `Hi, ${firstName}`)}</Text>
+          <Text style={[styles.subGreeting, { textAlign: ta }]}>
+            {user?.specialization
+              ? L(`فرص مختارة لتخصص ${user.specialization}`, `Picks for your field: ${user.specialization}`)
+              : L('مراجعتك الأسبوعية للوظائف جاهزة', 'Your weekly job review is ready')}
+          </Text>
         </View>
         <View style={styles.dot}>
           <Ionicons name="person" size={20} color={colors.white} />
@@ -39,15 +50,15 @@ export default function HomeScreen({ navigation }: Props) {
       {/* AI banner */}
       <TouchableOpacity
         activeOpacity={0.9}
-        style={[styles.banner, shadow.card]}
+        style={[styles.banner, shadow.card, { flexDirection: row }]}
         onPress={() => navigation.navigate('Jobs')}
       >
-        <Ionicons name="chevron-back" size={20} color={colors.white} />
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.white} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.bannerText}>
-            وجد الذكاء الاصطناعي <Text style={styles.bannerBold}>{homeStats.newMatches} وظائف متطابقة</Text>
+          <Text style={[styles.bannerText, { textAlign: ta }]}>
+            {L('وجد الذكاء الاصطناعي', 'AI found')} <Text style={styles.bannerBold}>{L(`${homeStats.newMatches} وظائف متطابقة`, `${homeStats.newMatches} matching jobs`)}</Text>
           </Text>
-          <Text style={styles.bannerSub}>منذ زيارتك الأخيرة</Text>
+          <Text style={[styles.bannerSub, { textAlign: ta }]}>{L('منذ زيارتك الأخيرة', 'since your last visit')}</Text>
         </View>
         <Ionicons name="sparkles" size={18} color={colors.white} />
       </TouchableOpacity>
@@ -57,42 +68,42 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.scoreRow}>
           <TouchableOpacity onPress={() => navigation.navigate('Ats')} style={styles.atsRing}>
             <ScoreRing score={homeStats.atsScore} size={70} strokeWidth={6} />
-            <Text style={styles.ringCaption}>نقاط ATS</Text>
+            <Text style={styles.ringCaption}>{L('نقاط ATS', 'ATS score')}</Text>
           </TouchableOpacity>
           <View style={styles.scoreText}>
-            <Text style={styles.scoreLabel}>نقاط السيرة الذاتية</Text>
+            <Text style={styles.scoreLabel}>{L('نقاط السيرة الذاتية', 'Resume score')}</Text>
             <Text style={styles.bigScore}>{homeStats.resumeScore}</Text>
-            <Text style={styles.scoreHint}>
-              أفضل من {homeStats.betterThanApplicants} من المتقدمين
+            <Text style={[styles.scoreHint, { textAlign: ta }]}>
+              {L(`أفضل من ${homeStats.betterThanApplicants} من المتقدمين`, `Better than ${homeStats.betterThanApplicants} applicants`)}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('ResumeAnalyzer')} style={styles.scorePill}>
-              <Text style={styles.scorePillText}>+{homeStats.pointsToReach85} نقاط هذا الأسبوع</Text>
+              <Text style={styles.scorePillText}>{L(`+${homeStats.pointsToReach85} نقاط هذا الأسبوع`, `+${homeStats.pointsToReach85} points this week`)}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Card>
 
       {/* Quick stats */}
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { flexDirection: row }]}>
         <Card style={styles.statCard}>
           <Text style={styles.statValue}>{homeStats.applications}</Text>
-          <Text style={styles.statLabel}>الطلبات</Text>
-          <Text style={styles.statSub}>4 نشطة هذا الشهر</Text>
+          <Text style={styles.statLabel}>{L('الطلبات', 'Applications')}</Text>
+          <Text style={styles.statSub}>{L('4 نشطة هذا الشهر', '4 active this month')}</Text>
         </Card>
         <Card style={styles.statCard}>
           <Text style={styles.statValue}>{homeStats.interviews}</Text>
-          <Text style={styles.statLabel}>المقابلات</Text>
-          <Text style={styles.statSub}>التالية الأربعاء 10 صباحاً</Text>
+          <Text style={styles.statLabel}>{L('المقابلات', 'Interviews')}</Text>
+          <Text style={styles.statSub}>{L('التالية الأربعاء 10ص', 'Next: Wed 10 AM')}</Text>
         </Card>
       </View>
 
       {/* Portfolio nudge */}
       {!profile.portfolioLinked && (
-        <TouchableOpacity activeOpacity={0.9} style={styles.portfolio}>
-          <Ionicons name="chevron-back" size={18} color={colors.accentText} />
+        <TouchableOpacity activeOpacity={0.9} style={[styles.portfolio, { flexDirection: row }]}>
+          <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.accentText} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.portfolioTitle}>أضف رابط معرض أعمالك</Text>
-            <Text style={styles.portfolioSub}>احصل على 3x مشاهدات أكثر من أصحاب العمل</Text>
+            <Text style={[styles.portfolioTitle, { textAlign: ta }]}>{L('أضف رابط معرض أعمالك', 'Add your portfolio link')}</Text>
+            <Text style={[styles.portfolioSub, { textAlign: ta }]}>{L('احصل على 3x مشاهدات أكثر من أصحاب العمل', 'Get 3× more views from employers')}</Text>
           </View>
           <Ionicons name="link" size={18} color={colors.accentText} />
         </TouchableOpacity>
@@ -101,8 +112,8 @@ export default function HomeScreen({ navigation }: Props) {
       {/* Best matches */}
       <View style={{ marginTop: spacing.xl }}>
         <SectionHeader
-          title="أفضل التطابقات لك"
-          actionLabel="عرض الكل 24"
+          title={L('أفضل التطابقات لك', 'Top matches for you')}
+          actionLabel={L('عرض الكل', 'See all')}
           onAction={() => navigation.navigate('Jobs')}
         />
         {topMatches.map((job) => (

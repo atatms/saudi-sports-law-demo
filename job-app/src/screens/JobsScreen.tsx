@@ -16,6 +16,7 @@ import { ALL_REGIONS_ID } from '../data/regions';
 import { jobPlatforms } from '../data/platforms';
 import { WorkMode } from '../data/types';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 
 type Props = CompositeScreenProps<
@@ -33,8 +34,17 @@ const MODE_FILTERS: { id: ModeFilter; label: string }[] = [
   { id: 'onsite', label: 'في الموقع' },
 ];
 
+const MODE_FILTERS_EN: Record<ModeFilter, string> = {
+  all: 'All jobs',
+  highpay: '15K+ SAR',
+  hybrid: 'Hybrid',
+  remote: 'Remote',
+  onsite: 'On-site',
+};
+
 export default function JobsScreen({ navigation, route }: Props) {
-  const { connectedPlatformIds } = useAuth();
+  const { connectedPlatformIds, user } = useAuth();
+  const { L, isRTL } = useLang();
   const [regionId, setRegionId] = useState<string>(route.params?.regionId ?? ALL_REGIONS_ID);
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<ModeFilter>('all');
@@ -67,37 +77,40 @@ export default function JobsScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.headerArea}>
-        <Text style={styles.title}>اكتشف الوظائف</Text>
+        <Text style={[styles.title, { textAlign: isRTL ? 'right' : 'left' }]}>{L('اكتشف الوظائف', 'Discover jobs')}</Text>
 
         {/* Connected-platforms banner */}
         <TouchableOpacity
           activeOpacity={0.9}
-          style={styles.connBanner}
+          style={[styles.connBanner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
           onPress={() => navigation.navigate('ConnectPlatforms')}
         >
-          <Icon name="chevron-back" size={18} color={colors.primary} />
+          <Icon name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.connTitle}>
-              {newCount} وظيفة جديدة من منصاتك المرتبطة
+            <Text style={[styles.connTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {connectedNames.length > 0
+                ? L(`${newCount} وظيفة جديدة من منصاتك المرتبطة`, `${newCount} new jobs from your linked platforms`)
+                : L('اربط منصات التوظيف لعرض الوظائف', 'Link job platforms to see jobs')}
             </Text>
-            <Text style={styles.connSub} numberOfLines={1}>
-              {connectedNames.length > 0 ? connectedNames.join('، ') : 'لا توجد منصات مرتبطة — اضغط للربط'}
+            <Text style={[styles.connSub, { textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+              {connectedNames.length > 0
+                ? connectedNames.join(L('، ', ', '))
+                : L('اضغط هنا للربط — تُسحب الوظائف تلقائياً', 'Tap to link — jobs are pulled automatically')}
             </Text>
           </View>
           <Icon name="git-network-outline" size={18} color={colors.primary} />
         </TouchableOpacity>
 
         {/* Search */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
+        <View style={[styles.searchRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.searchBox, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Ionicons name="search" size={18} color={colors.textMuted} />
             <TextInput
-              style={styles.searchInput}
-              placeholder="المسمى الوظيفي، الشركة، المهارة..."
+              style={[styles.searchInput, { textAlign: isRTL ? 'right' : 'left' }]}
+              placeholder={L('المسمى الوظيفي، الشركة، المهارة...', 'Job title, company, skill...')}
               placeholderTextColor={colors.textFaint}
               value={query}
               onChangeText={setQuery}
-              textAlign="right"
             />
           </View>
           <View style={styles.filterBtn}>
@@ -106,29 +119,39 @@ export default function JobsScreen({ navigation, route }: Props) {
         </View>
 
         {/* Region dropdown (requested feature) */}
-        <View style={styles.regionRow}>
+        <View style={[styles.regionRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <RegionDropdown selectedId={regionId} onSelect={setRegionId} />
-          <Text style={styles.regionHint}>تصفية حسب المنطقة الإدارية</Text>
+          <Text style={styles.regionHint}>{L('تصفية حسب المنطقة الإدارية', 'Filter by region')}</Text>
         </View>
 
         {/* Mode filters */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersRow}
+          contentContainerStyle={[styles.filtersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         >
           {MODE_FILTERS.map((f) => (
             <Chip
               key={f.id}
-              label={f.label}
+              label={L(f.label, MODE_FILTERS_EN[f.id])}
               active={mode === f.id}
               onPress={() => setMode(f.id)}
             />
           ))}
         </ScrollView>
 
-        <Text style={styles.count}>
-          {filtered.length} وظيفة · مرتبة حسب تطابق الذكاء الاصطناعي
+        {/* Tailoring line by the user's degree + field */}
+        {user?.specialization ? (
+          <Text style={[styles.tailor, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {L(
+              `مقترحة لتخصص «${user.specialization}»`,
+              `Tailored to your field "${user.specialization}"`,
+            )}
+          </Text>
+        ) : null}
+
+        <Text style={[styles.count, { textAlign: isRTL ? 'right' : 'left' }]}>
+          {filtered.length} {L('وظيفة · مرتبة حسب تطابق الذكاء الاصطناعي', 'jobs · ranked by AI match')}
         </Text>
       </View>
 
@@ -138,8 +161,17 @@ export default function JobsScreen({ navigation, route }: Props) {
       >
         {filtered.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="search-outline" size={42} color={colors.textFaint} />
-            <Text style={styles.emptyText}>لا توجد وظائف مطابقة في هذه المنطقة</Text>
+            <Ionicons name="git-network-outline" size={42} color={colors.textFaint} />
+            <Text style={styles.emptyText}>
+              {connectedPlatformIds.length === 0
+                ? L('لم تربط أي منصة بعد', 'You haven\'t linked any platform yet')
+                : L('لا توجد وظائف مطابقة لهذه التصفية', 'No jobs match this filter')}
+            </Text>
+            {connectedPlatformIds.length === 0 ? (
+              <TouchableOpacity style={styles.linkBtn} onPress={() => navigation.navigate('ConnectPlatforms')}>
+                <Text style={styles.linkBtnText}>{L('ربط منصات التوظيف', 'Link job platforms')}</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           filtered.map((job) => (
@@ -204,9 +236,12 @@ const styles = StyleSheet.create({
   regionHint: { fontSize: font.tiny, color: colors.textMuted, writingDirection: 'rtl' },
 
   filtersRow: { flexDirection: 'row-reverse', gap: 8, paddingVertical: spacing.md },
-  count: { fontSize: font.small, color: colors.textMuted, textAlign: 'right', marginBottom: spacing.sm, writingDirection: 'rtl' },
+  count: { fontSize: font.small, color: colors.textMuted, marginBottom: spacing.sm },
+  tailor: { fontSize: font.small, color: colors.primary, fontWeight: '700', marginTop: spacing.xs },
 
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   empty: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.md },
-  emptyText: { color: colors.textMuted, fontSize: font.body, writingDirection: 'rtl' },
+  emptyText: { color: colors.textMuted, fontSize: font.body },
+  linkBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.xl, paddingVertical: 12 },
+  linkBtnText: { color: colors.white, fontWeight: '800', fontSize: font.body },
 });

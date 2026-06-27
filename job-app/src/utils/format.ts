@@ -2,24 +2,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { WorkMode } from '../data/types';
 import { colors } from '../theme';
 
-export function formatSalary(sar: number): string {
+export type Lang = 'ar' | 'en';
+
+export function formatSalary(sar: number, lang: Lang = 'ar'): string {
   if (sar >= 1000) {
     const k = sar / 1000;
     const txt = Number.isInteger(k) ? `${k}` : k.toFixed(1);
-    return `${txt} ألف ريال/شهر`;
+    return lang === 'ar' ? `${txt} ألف ريال/شهر` : `${txt}K SAR/mo`;
   }
-  return `${sar} ريال/شهر`;
+  return lang === 'ar' ? `${sar} ريال/شهر` : `${sar} SAR/mo`;
 }
 
-export function workModeLabel(mode: WorkMode): string {
-  switch (mode) {
-    case 'remote':
-      return 'عن بعد';
-    case 'hybrid':
-      return 'هجين';
-    default:
-      return 'في الموقع';
-  }
+export function workModeLabel(mode: WorkMode, lang: Lang = 'ar'): string {
+  const map: Record<WorkMode, [string, string]> = {
+    remote: ['عن بعد', 'Remote'],
+    hybrid: ['هجين', 'Hybrid'],
+    onsite: ['في الموقع', 'On-site'],
+  };
+  return lang === 'ar' ? map[mode][0] : map[mode][1];
 }
 
 export function workModeIcon(mode: WorkMode): keyof typeof Ionicons.glyphMap {

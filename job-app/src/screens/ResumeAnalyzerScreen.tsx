@@ -10,6 +10,7 @@ import ProgressBar from '../components/ProgressBar';
 import TopBar from '../components/TopBar';
 import { colors, font, radius, spacing } from '../theme';
 import { profile, resumeScore, resumeBreakdown, resumeSuggestions } from '../data/profile';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ResumeAnalyzer'>;
@@ -21,9 +22,12 @@ function barColor(score: number) {
 }
 
 export default function ResumeAnalyzerScreen({ navigation }: Props) {
+  const { L, isRTL } = useLang();
+  const ta = isRTL ? 'right' : 'left';
+  const row = isRTL ? 'row-reverse' : 'row';
   return (
     <Screen>
-      <TopBar title="محلل السيرة الذاتية" onBack={() => navigation.goBack()} rightLabel="تصدير" />
+      <TopBar title={L('محلل السيرة الذاتية', 'CV analyzer')} onBack={() => navigation.goBack()} rightLabel={L('تصدير', 'Export')} />
 
       {/* File chip */}
       <Card flat style={styles.fileCard}>
@@ -41,38 +45,38 @@ export default function ResumeAnalyzerScreen({ navigation }: Props) {
       <View style={styles.scoreWrap}>
         <ScoreRing score={resumeScore} size={120} strokeWidth={9} color={colors.gold} />
         <View style={styles.aboveAvg}>
-          <Text style={styles.aboveAvgText}>فوق المتوسط</Text>
+          <Text style={styles.aboveAvgText}>{L('فوق المتوسط', 'Above average')}</Text>
         </View>
-        <Text style={styles.scoreSub}>أفضل من 161 في مجالك</Text>
+        <Text style={styles.scoreSub}>{L('أفضل من 161 في مجالك', 'Better than 161 in your field')}</Text>
       </View>
 
       {/* Breakdown */}
-      <Text style={styles.sectionTitle}>تفاصيل النتيجة</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('تفاصيل النتيجة', 'Score breakdown')}</Text>
       <Card flat style={{ marginTop: spacing.sm }}>
         {resumeBreakdown.map((b) => (
-          <View key={b.label} style={styles.breakRow}>
+          <View key={b.label} style={[styles.breakRow, { flexDirection: row }]}>
             <Text style={styles.breakScore}>{b.score}%</Text>
             <View style={styles.breakBar}>
               <ProgressBar value={b.score} color={barColor(b.score)} height={7} />
             </View>
-            <Text style={styles.breakLabel}>{b.label}</Text>
+            <Text style={[styles.breakLabel, { textAlign: ta }]}>{b.label}</Text>
           </View>
         ))}
       </Card>
 
       {/* AI suggestions */}
-      <Text style={styles.sectionTitle}>اقتراحات الذكاء الاصطناعي</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('اقتراحات الذكاء الاصطناعي', 'AI suggestions')}</Text>
       {resumeSuggestions.map((s, i) => (
         <Card key={i} style={styles.suggestionCard}>
-          <View style={styles.suggestionTop}>
+          <View style={[styles.suggestionTop, { flexDirection: row }]}>
             <Ionicons
               name={s.type === 'positive' ? 'checkmark-circle' : 'alert-circle'}
               size={20}
               color={s.type === 'positive' ? colors.primary : colors.gold}
             />
-            <Text style={styles.suggestionTitle}>{s.title}</Text>
+            <Text style={[styles.suggestionTitle, { textAlign: ta }]}>{s.title}</Text>
           </View>
-          <Text style={styles.suggestionDetail}>{s.detail}</Text>
+          <Text style={[styles.suggestionDetail, { textAlign: ta }]}>{s.detail}</Text>
           {s.action ? (
             <TouchableOpacity style={styles.aiActionBtn} activeOpacity={0.85}>
               <Ionicons name="sparkles" size={14} color={colors.white} />
@@ -83,7 +87,7 @@ export default function ResumeAnalyzerScreen({ navigation }: Props) {
       ))}
 
       <TouchableOpacity style={styles.reanalyze} activeOpacity={0.85}>
-        <Text style={styles.reanalyzeText}>إعادة التحليل بنسخة جديدة</Text>
+        <Text style={styles.reanalyzeText}>{L('إعادة التحليل بنسخة جديدة', 'Re-analyze a new version')}</Text>
       </TouchableOpacity>
     </Screen>
   );

@@ -16,12 +16,17 @@ import { skillsToImprove, recommendedCoursesForSkills } from '../data/learning';
 import { getJobById } from '../data/jobs';
 import { Course } from '../data/types';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'UploadCv'>;
 type Phase = 'idle' | 'analyzing' | 'done';
 
-const LEVEL: Record<Course['level'], string> = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' };
+const LEVEL: Record<Course['level'], [string, string]> = {
+  beginner: ['مبتدئ', 'Beginner'],
+  intermediate: ['متوسط', 'Intermediate'],
+  advanced: ['متقدم', 'Advanced'],
+};
 
 function barColor(s: number) {
   if (s >= 80) return colors.primary;
@@ -30,36 +35,42 @@ function barColor(s: number) {
 }
 
 function CourseRow({ course }: { course: Course }) {
+  const { L, lang, isRTL } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
+  const ta = isRTL ? 'right' : 'left';
   return (
     <Card style={styles.courseCard}>
-      <View style={styles.courseHead}>
-        <View style={styles.courseBadges}>
+      <View style={[styles.courseHead, { flexDirection: row }]}>
+        <View style={[styles.courseBadges, { flexDirection: row }]}>
           {course.free ? (
             <View style={[styles.tagBadge, { backgroundColor: colors.successBg }]}>
-              <Text style={[styles.tagText, { color: colors.primary }]}>مجانية</Text>
+              <Text style={[styles.tagText, { color: colors.primary }]}>{L('مجانية', 'Free')}</Text>
             </View>
           ) : null}
           {course.certificate ? (
             <View style={[styles.tagBadge, { backgroundColor: colors.goldSoft }]}>
-              <Text style={[styles.tagText, { color: colors.gold }]}>شهادة معتمدة</Text>
+              <Text style={[styles.tagText, { color: colors.gold }]}>{L('شهادة معتمدة', 'Certificate')}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={styles.courseTitle}>{course.title}</Text>
+        <Text style={[styles.courseTitle, { textAlign: ta }]}>{course.title}</Text>
       </View>
-      <Text style={styles.courseGap}>يسدّ فجوة: {course.skill}</Text>
-      <View style={styles.courseMeta}>
-        <Chip label={`${course.hours} ساعات`} icon="time-outline" />
-        <Chip label={LEVEL[course.level]} icon="bar-chart-outline" />
+      <Text style={[styles.courseGap, { textAlign: ta }]}>{L('يسدّ فجوة', 'Closes gap')}: {course.skill}</Text>
+      <View style={[styles.courseMeta, { flexDirection: row }]}>
+        <Chip label={`${course.hours} ${L('ساعات', 'hrs')}`} icon="time-outline" />
+        <Chip label={lang === 'ar' ? LEVEL[course.level][0] : LEVEL[course.level][1]} icon="bar-chart-outline" />
         <Chip label={course.provider} icon="school-outline" />
       </View>
-      <Button label="التسجيل في الدورة" onPress={() => {}} style={styles.courseBtn} />
+      <Button label={L('التسجيل في الدورة', 'Enroll in course')} onPress={() => {}} style={styles.courseBtn} />
     </Card>
   );
 }
 
 export default function UploadCvScreen({ navigation, route }: Props) {
   const { cv, setCv } = useAuth();
+  const { L, isRTL } = useLang();
+  const ta = isRTL ? 'right' : 'left';
+  const row = isRTL ? 'row-reverse' : 'row';
   const job = route.params?.jobId ? getJobById(route.params.jobId) : undefined;
   const [phase, setPhase] = useState<Phase>(cv.analyzed ? 'done' : 'idle');
 
@@ -77,12 +88,12 @@ export default function UploadCvScreen({ navigation, route }: Props) {
 
   return (
     <Screen>
-      <TopBar title="رفع وتحليل السيرة الذاتية" onBack={() => navigation.goBack()} />
+      <TopBar title={L('رفع وتحليل السيرة الذاتية', 'Upload & analyze CV')} onBack={() => navigation.goBack()} />
 
       {job ? (
-        <Card style={styles.jobCard}>
+        <Card style={[styles.jobCard, { flexDirection: row }]}>
           <Ionicons name="briefcase-outline" size={18} color={colors.primary} />
-          <Text style={styles.jobText}>التقديم على: {job.title} — {job.company}</Text>
+          <Text style={[styles.jobText, { textAlign: ta }]}>{L('التقديم على', 'Applying to')}: {job.title} — {job.company}</Text>
         </Card>
       ) : null}
 
@@ -93,15 +104,17 @@ export default function UploadCvScreen({ navigation, route }: Props) {
             <View style={styles.dropIcon}>
               <Ionicons name="cloud-upload-outline" size={34} color={colors.primary} />
             </View>
-            <Text style={styles.dropTitle}>ارفع سيرتك الذاتية</Text>
-            <Text style={styles.dropSub}>PDF أو Word — حتى 5 ميجابايت</Text>
+            <Text style={styles.dropTitle}>{L('ارفع سيرتك الذاتية', 'Upload your CV')}</Text>
+            <Text style={styles.dropSub}>{L('PDF أو Word — حتى 5 ميجابايت', 'PDF or Word — up to 5 MB')}</Text>
             <View style={styles.dropBtn}>
-              <Text style={styles.dropBtnText}>اختيار ملف</Text>
+              <Text style={styles.dropBtnText}>{L('اختيار ملف', 'Choose file')}</Text>
             </View>
           </TouchableOpacity>
           <Text style={styles.hint}>
-            سيقوم الذكاء الاصطناعي بتحليل سيرتك الذاتية، وحساب توافقها مع أنظمة التوظيف،
-            واقتراح دورات تطويرية لسد الفجوات.
+            {L(
+              'سيقوم الذكاء الاصطناعي بتحليل سيرتك الذاتية، وحساب توافقها مع أنظمة التوظيف، واقتراح دورات تطويرية لسد الفجوات.',
+              'AI will analyze your CV, score its ATS compatibility, and recommend courses to close your skill gaps.',
+            )}
           </Text>
         </>
       )}
@@ -110,8 +123,8 @@ export default function UploadCvScreen({ navigation, route }: Props) {
       {phase === 'analyzing' && (
         <Card style={styles.analyzing}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.analyzingTitle}>جارٍ تحليل سيرتك الذاتية...</Text>
-          <Text style={styles.analyzingSub}>قراءة الخبرات والمهارات ومطابقتها بسوق العمل</Text>
+          <Text style={styles.analyzingTitle}>{L('جارٍ تحليل سيرتك الذاتية...', 'Analyzing your CV...')}</Text>
+          <Text style={styles.analyzingSub}>{L('قراءة الخبرات والمهارات ومطابقتها بسوق العمل', 'Reading experience & skills and matching the job market')}</Text>
         </Card>
       )}
 
@@ -120,31 +133,31 @@ export default function UploadCvScreen({ navigation, route }: Props) {
         <>
           <View style={styles.scoreWrap}>
             <ScoreRing score={resumeScore} size={110} strokeWidth={9} color={colors.gold} />
-            <Text style={styles.scoreLabel}>نتيجة سيرتك الذاتية — فوق المتوسط</Text>
+            <Text style={styles.scoreLabel}>{L('نتيجة سيرتك الذاتية — فوق المتوسط', 'Your CV score — above average')}</Text>
           </View>
 
-          <View style={styles.detailsHeader}>
+          <View style={[styles.detailsHeader, { flexDirection: row }]}>
             <TouchableOpacity onPress={() => navigation.navigate('ResumeAnalyzer')}>
-              <Text style={styles.detailsLink}>التحليل الكامل</Text>
+              <Text style={styles.detailsLink}>{L('التحليل الكامل', 'Full analysis')}</Text>
             </TouchableOpacity>
-            <Text style={styles.sectionTitle}>تفاصيل النتيجة</Text>
+            <Text style={styles.sectionTitle}>{L('تفاصيل النتيجة', 'Score breakdown')}</Text>
           </View>
           <Card flat>
             {resumeBreakdown.map((b) => (
-              <View key={b.label} style={styles.breakRow}>
+              <View key={b.label} style={[styles.breakRow, { flexDirection: row }]}>
                 <Text style={styles.breakScore}>{b.score}%</Text>
                 <View style={{ flex: 1 }}>
                   <ProgressBar value={b.score} color={barColor(b.score)} height={7} />
                 </View>
-                <Text style={styles.breakLabel}>{b.label}</Text>
+                <Text style={[styles.breakLabel, { textAlign: ta }]}>{b.label}</Text>
               </View>
             ))}
           </Card>
 
           {/* Gap analysis */}
-          <Text style={styles.sectionTitle}>مهارات تحتاج إلى تطوير</Text>
+          <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('مهارات تحتاج إلى تطوير', 'Skills to develop')}</Text>
           <Card flat style={{ marginTop: spacing.sm }}>
-            <View style={styles.skillsWrap}>
+            <View style={[styles.skillsWrap, { flexDirection: row }]}>
               {skillsToImprove.map((s) => (
                 <Chip key={s} label={s} variant="accent" />
               ))}
@@ -152,20 +165,22 @@ export default function UploadCvScreen({ navigation, route }: Props) {
           </Card>
 
           {/* Recommended free courses */}
-          <View style={styles.recHeader}>
+          <View style={[styles.recHeader, { flexDirection: row }]}>
             <Ionicons name="ribbon-outline" size={18} color={colors.primary} />
-            <Text style={styles.sectionTitle}>دورات مجانية موصى بها لتطويرك</Text>
+            <Text style={styles.sectionTitle}>{L('دورات مجانية موصى بها لتطويرك', 'Recommended free courses')}</Text>
           </View>
-          <Text style={styles.recSub}>
-            دورات معتمدة من منصات سعودية (هدف/دروب، أكاديمية طويق) تمنح شهادات مجانية
-            لسد الفجوات في سيرتك الذاتية.
+          <Text style={[styles.recSub, { textAlign: ta }]}>
+            {L(
+              'دورات معتمدة من منصات سعودية (هدف/دروب، أكاديمية طويق) تمنح شهادات مجانية لسد الفجوات في سيرتك الذاتية.',
+              'Accredited courses from Saudi platforms (HRDF/Doroob, Tuwaiq Academy) granting free certificates to close your CV gaps.',
+            )}
           </Text>
           {recommended.map((c) => (
             <CourseRow key={c.id} course={c} />
           ))}
 
           <Button
-            label="عرض جميع الدورات"
+            label={L('عرض جميع الدورات', 'View all courses')}
             variant="outline"
             onPress={() => navigation.navigate('Tabs', { screen: 'Learning' })}
             style={{ marginTop: spacing.sm }}
@@ -173,7 +188,7 @@ export default function UploadCvScreen({ navigation, route }: Props) {
 
           {job ? (
             <Button
-              label="إكمال التقديم على الوظيفة"
+              label={L('إكمال التقديم على الوظيفة', 'Complete job application')}
               onPress={() => navigation.goBack()}
               style={{ marginTop: spacing.md }}
             />

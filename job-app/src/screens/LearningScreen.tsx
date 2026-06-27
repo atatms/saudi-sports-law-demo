@@ -11,43 +11,51 @@ import StatTile from '../components/StatTile';
 import { colors, font, radius, spacing } from '../theme';
 import { courses, skillsToImprove, learningProgress } from '../data/learning';
 import { Course } from '../data/types';
+import { useLang } from '../context/LanguageContext';
 
 const LEVEL_LABEL: Record<Course['level'], string> = {
   beginner: 'مبتدئ',
   intermediate: 'متوسط',
   advanced: 'متقدم',
 };
+const LEVEL_EN: Record<Course['level'], string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};
 
 function CourseCard({ course }: { course: Course }) {
+  const { L, lang, isRTL } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
   return (
     <Card style={styles.courseCard}>
-      <View style={styles.courseTop}>
-        <View style={styles.topBadges}>
+      <View style={[styles.courseTop, { flexDirection: row }]}>
+        <View style={[styles.topBadges, { flexDirection: row }]}>
           {course.free ? (
             <View style={[styles.smallBadge, { backgroundColor: colors.successBg }]}>
-              <Text style={[styles.smallBadgeText, { color: colors.primary }]}>مجانية</Text>
+              <Text style={[styles.smallBadgeText, { color: colors.primary }]}>{L('مجانية', 'Free')}</Text>
             </View>
           ) : null}
           {course.required ? (
             <View style={styles.requiredBadge}>
-              <Text style={styles.requiredText}>مطلوبة</Text>
+              <Text style={styles.requiredText}>{L('مطلوبة', 'Required')}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={styles.courseTitle}>{course.title}</Text>
+        <Text style={[styles.courseTitle, { textAlign: isRTL ? 'right' : 'left' }]}>{course.title}</Text>
       </View>
 
-      <View style={styles.courseMeta}>
-        <Chip label={`${course.hours} ساعات`} icon="time-outline" />
-        <Chip label={LEVEL_LABEL[course.level]} icon="bar-chart-outline" />
-        {course.certificate ? <Chip label="شهادة معتمدة" icon="ribbon-outline" /> : null}
+      <View style={[styles.courseMeta, { flexDirection: row }]}>
+        <Chip label={`${course.hours} ${L('ساعات', 'hrs')}`} icon="time-outline" />
+        <Chip label={lang === 'ar' ? LEVEL_LABEL[course.level] : LEVEL_EN[course.level]} icon="bar-chart-outline" />
+        {course.certificate ? <Chip label={L('شهادة معتمدة', 'Certificate')} icon="ribbon-outline" /> : null}
       </View>
 
-      <View style={styles.courseFooter}>
+      <View style={[styles.courseFooter, { flexDirection: row }]}>
         <TouchableOpacity style={styles.startBtn} activeOpacity={0.85}>
-          <Text style={styles.startText}>ابدأ الآن</Text>
+          <Text style={styles.startText}>{L('ابدأ الآن', 'Start now')}</Text>
         </TouchableOpacity>
-        <View style={styles.provider}>
+        <View style={[styles.provider, { flexDirection: row }]}>
           <Ionicons name="school-outline" size={14} color={colors.textMuted} />
           <Text style={styles.providerText}>{course.provider}</Text>
         </View>
@@ -57,46 +65,52 @@ function CourseCard({ course }: { course: Course }) {
 }
 
 export default function LearningScreen() {
+  const { L, isRTL } = useLang();
+  const row = isRTL ? 'row-reverse' : 'row';
+  const ta = isRTL ? 'right' : 'left';
   return (
     <Screen>
-      <Text style={styles.title}>طوّر مهاراتك</Text>
-      <Text style={styles.subtitle}>دورات مقترحة بناءً على ملفك وسوق العمل</Text>
+      <Text style={[styles.title, { textAlign: ta }]}>{L('طوّر مهاراتك', 'Grow your skills')}</Text>
+      <Text style={[styles.subtitle, { textAlign: ta }]}>{L('دورات مقترحة بناءً على ملفك وسوق العمل', 'Courses tailored to your profile and the job market')}</Text>
 
-      <TouchableOpacity activeOpacity={0.9} style={styles.banner}>
-        <Ionicons name="chevron-back" size={18} color={colors.white} />
-        <Text style={styles.bannerText}>نوصي بهذه الدورات لزيادة فرصك في التوظيف</Text>
+      <TouchableOpacity activeOpacity={0.9} style={[styles.banner, { flexDirection: row }]}>
+        <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.white} />
+        <Text style={[styles.bannerText, { textAlign: ta }]}>{L('نوصي بهذه الدورات لزيادة فرصك في التوظيف', 'Recommended courses to boost your hiring chances')}</Text>
         <Ionicons name="star" size={16} color={colors.white} />
       </TouchableOpacity>
 
       <View style={{ marginTop: spacing.xl }}>
-        <SectionHeader title="دورات مقترحة" actionLabel="عرض الكل" />
+        <SectionHeader title={L('دورات مقترحة', 'Suggested courses')} actionLabel={L('عرض الكل', 'See all')} />
         {courses.map((c) => (
           <CourseCard key={c.id} course={c} />
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>مهارات تحتاج تطويرها</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('مهارات تحتاج تطويرها', 'Skills to improve')}</Text>
       <Card style={{ marginTop: spacing.sm }}>
-        <View style={styles.skillsWrap}>
+        <View style={[styles.skillsWrap, { flexDirection: row }]}>
           {skillsToImprove.map((s) => (
             <Chip key={s} label={s} variant="accent" />
           ))}
         </View>
       </Card>
 
-      <Text style={styles.sectionTitle}>تقدمك</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('تقدمك', 'Your progress')}</Text>
       <Card style={{ marginTop: spacing.sm }}>
-        <View style={styles.progressHeader}>
+        <View style={[styles.progressHeader, { flexDirection: row }]}>
           <Text style={styles.progressPct}>{learningProgress.percent}%</Text>
           <Text style={styles.progressLabel}>
-            أكملت {learningProgress.completedCourses} من {learningProgress.totalCourses} دورات
+            {L(
+              `أكملت ${learningProgress.completedCourses} من ${learningProgress.totalCourses} دورات`,
+              `Completed ${learningProgress.completedCourses} of ${learningProgress.totalCourses} courses`,
+            )}
           </Text>
         </View>
         <ProgressBar value={learningProgress.percent} />
-        <View style={styles.tilesRow}>
-          <StatTile value={learningProgress.newSkills} label="مهارات جديدة" icon="pulse-outline" />
-          <StatTile value={learningProgress.learningHours} label="ساعة تعلم" icon="time-outline" iconColor={colors.gold} valueColor={colors.gold} />
-          <StatTile value={learningProgress.certificates} label="شهادات" icon="ribbon-outline" />
+        <View style={[styles.tilesRow, { flexDirection: row }]}>
+          <StatTile value={learningProgress.newSkills} label={L('مهارات جديدة', 'New skills')} icon="pulse-outline" />
+          <StatTile value={learningProgress.learningHours} label={L('ساعة تعلم', 'Learning hrs')} icon="time-outline" iconColor={colors.gold} valueColor={colors.gold} />
+          <StatTile value={learningProgress.certificates} label={L('شهادات', 'Certificates')} icon="ribbon-outline" />
         </View>
       </Card>
     </Screen>

@@ -5,6 +5,7 @@ import { Job } from '../data/types';
 import { colors, font, radius, spacing, shadow } from '../theme';
 import { formatSalary, workModeLabel, workModeIcon, matchColor } from '../utils/format';
 import { getPlatformById } from '../data/platforms';
+import { useLang } from '../context/LanguageContext';
 import Avatar from './Avatar';
 import Chip from './Chip';
 
@@ -18,49 +19,52 @@ interface Props {
 
 /** Job listing card matching the "اكتشف الوظائف" / home design. */
 export default function JobCard({ job, onPress, onApply, onToggleSave, primaryLabel }: Props) {
+  const { L, lang, isRTL } = useLang();
   const platform = getPlatformById(job.sourceId);
+  const row = isRTL ? 'row-reverse' : 'row';
+  const ta = isRTL ? 'right' : 'left';
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={[styles.card, shadow.card]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { flexDirection: row }]}>
         <Avatar initials={job.companyShort} />
         <View style={styles.headerText}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, { textAlign: ta }]} numberOfLines={1}>
             {job.title}
           </Text>
-          <Text style={styles.company} numberOfLines={1}>
+          <Text style={[styles.company, { textAlign: ta }]} numberOfLines={1}>
             {job.company} · {job.city}
           </Text>
         </View>
         <View style={[styles.matchBadge, { backgroundColor: colors.successBg }]}>
           <Text style={[styles.matchPct, { color: matchColor(job.matchScore) }]}>{job.matchScore}%</Text>
-          <Text style={styles.matchWord}>تطابق</Text>
+          <Text style={styles.matchWord}>{L('تطابق', 'match')}</Text>
         </View>
       </View>
 
       {/* Source platform + new flag */}
-      <View style={styles.sourceRow}>
+      <View style={[styles.sourceRow, { flexDirection: row }]}>
         {platform ? (
-          <View style={styles.sourcePill}>
+          <View style={[styles.sourcePill, { flexDirection: row }]}>
             <View style={[styles.sourceDot, { backgroundColor: platform.color }]} />
-            <Text style={styles.sourceText}>عبر {platform.name}</Text>
+            <Text style={styles.sourceText}>{L(`عبر ${platform.name}`, `via ${platform.nameEn}`)}</Text>
           </View>
         ) : (
           <View />
         )}
         {job.isNew ? (
           <View style={styles.newBadge}>
-            <Text style={styles.newText}>جديد</Text>
+            <Text style={styles.newText}>{L('جديد', 'New')}</Text>
           </View>
         ) : null}
       </View>
 
-      <View style={styles.tags}>
-        <Chip label={formatSalary(job.salary)} />
-        <Chip label={`${job.experienceYears} سنوات خبرة`} />
-        <Chip label={workModeLabel(job.workMode)} icon={workModeIcon(job.workMode)} />
+      <View style={[styles.tags, { flexDirection: row }]}>
+        <Chip label={formatSalary(job.salary, lang)} />
+        <Chip label={L(`${job.experienceYears} سنوات خبرة`, `${job.experienceYears} yrs exp`)} />
+        <Chip label={workModeLabel(job.workMode, lang)} icon={workModeIcon(job.workMode)} />
       </View>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { flexDirection: row }]}>
         <TouchableOpacity style={styles.saveBtn} onPress={onToggleSave} hitSlop={8}>
           <Ionicons
             name={job.saved ? 'bookmark' : 'bookmark-outline'}
@@ -69,7 +73,9 @@ export default function JobCard({ job, onPress, onApply, onToggleSave, primaryLa
           />
         </TouchableOpacity>
         <TouchableOpacity style={styles.applyBtn} onPress={onApply} activeOpacity={0.85}>
-          <Text style={styles.applyText}>{primaryLabel ?? (job.matchScore >= 80 ? 'قدم الآن' : 'عرض الوظيفة')}</Text>
+          <Text style={styles.applyText}>
+            {primaryLabel ?? (job.matchScore >= 80 ? L('قدم الآن', 'Apply now') : L('عرض الوظيفة', 'View job'))}
+          </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

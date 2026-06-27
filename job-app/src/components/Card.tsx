@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { colors, radius, spacing, shadow } from '../theme';
 
 export default function Card({
@@ -8,7 +8,7 @@ export default function Card({
   flat,
 }: {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   flat?: boolean;
 }) {
   return <View style={[styles.card, !flat && shadow.card, style]}>{children}</View>;

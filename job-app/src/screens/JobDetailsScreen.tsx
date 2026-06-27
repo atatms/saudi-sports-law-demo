@@ -13,18 +13,22 @@ import { colors, font, radius, spacing, shadow } from '../theme';
 import { getJobById } from '../data/jobs';
 import { getRegionById } from '../data/regions';
 import { formatSalary, workModeLabel, workModeIcon } from '../utils/format';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'JobDetails'>;
 
 export default function JobDetailsScreen({ route, navigation }: Props) {
+  const { L, lang, isRTL } = useLang();
   const job = getJobById(route.params.jobId);
+  const ta = isRTL ? 'right' : 'left';
+  const row = isRTL ? 'row-reverse' : 'row';
 
   if (!job) {
     return (
       <Screen>
-        <TopBar title="تفاصيل الوظيفة" onBack={() => navigation.goBack()} />
-        <Text style={styles.body}>لم يتم العثور على الوظيفة.</Text>
+        <TopBar title={L('تفاصيل الوظيفة', 'Job details')} onBack={() => navigation.goBack()} />
+        <Text style={styles.body}>{L('لم يتم العثور على الوظيفة.', 'Job not found.')}</Text>
       </Screen>
     );
   }
@@ -35,81 +39,81 @@ export default function JobDetailsScreen({ route, navigation }: Props) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Screen>
-        <TopBar title="تفاصيل الوظيفة" onBack={() => navigation.goBack()} />
+        <TopBar title={L('تفاصيل الوظيفة', 'Job details')} onBack={() => navigation.goBack()} />
 
         {/* Title block */}
-        <View style={styles.titleRow}>
+        <View style={[styles.titleRow, { flexDirection: row }]}>
           <Avatar initials={job.companyShort} size={52} />
           <View style={{ flex: 1, marginHorizontal: spacing.md }}>
-            <Text style={styles.title}>{job.title}</Text>
-            <Text style={styles.company}>
+            <Text style={[styles.title, { textAlign: ta }]}>{job.title}</Text>
+            <Text style={[styles.company, { textAlign: ta }]}>
               {job.company} · {job.city}
               {region ? `، ${region.name}` : ''}
             </Text>
           </View>
         </View>
 
-        <View style={styles.tags}>
-          <Chip label={formatSalary(job.salary)} />
-          <Chip label={`${job.experienceYears} سنوات خبرة`} />
-          <Chip label={workModeLabel(job.workMode)} icon={workModeIcon(job.workMode)} />
-          <Chip label={job.fullTime ? 'دوام كامل' : 'دوام جزئي'} />
+        <View style={[styles.tags, { flexDirection: row }]}>
+          <Chip label={formatSalary(job.salary, lang)} />
+          <Chip label={L(`${job.experienceYears} سنوات خبرة`, `${job.experienceYears} yrs exp`)} />
+          <Chip label={workModeLabel(job.workMode, lang)} icon={workModeIcon(job.workMode)} />
+          <Chip label={job.fullTime ? L('دوام كامل', 'Full-time') : L('دوام جزئي', 'Part-time')} />
         </View>
 
         {/* AI match */}
         <Card style={styles.matchCard}>
-          <View style={styles.matchTop}>
+          <View style={[styles.matchTop, { flexDirection: row }]}>
             <Ionicons name="sparkles" size={18} color={colors.primary} />
             <Text style={styles.matchTitle}>
-              {job.matchScore}% تطابق مع الذكاء الاصطناعي
+              {L(`${job.matchScore}% تطابق مع الذكاء الاصطناعي`, `${job.matchScore}% AI match`)}
             </Text>
           </View>
-          <Text style={styles.matchSub}>أفضل x{job.betterThan} من المتقدمين</Text>
+          <Text style={[styles.matchSub, { textAlign: ta }]}>{L(`أفضل x${job.betterThan} من المتقدمين`, `${job.betterThan}× better than applicants`)}</Text>
 
-          <View style={styles.reqHeader}>
-            <Text style={styles.reqLabel}>تطابق متطلبات الذكاء الاصطناعي</Text>
+          <View style={[styles.reqHeader, { flexDirection: row }]}>
+            <Text style={styles.reqLabel}>{L('تطابق متطلبات الذكاء الاصطناعي', 'AI requirements match')}</Text>
             <Text style={styles.reqCount}>
               {job.aiRequirementsMet} / {job.aiRequirementsTotal}
             </Text>
           </View>
           <ProgressBar value={reqPct} />
-          <Text style={styles.reqHint}>
-            تطابق مع {job.aiRequirementsMet} من {job.aiRequirementsTotal} متطلبات رئيسية
+          <Text style={[styles.reqHint, { textAlign: ta }]}>
+            {L(`تطابق مع ${job.aiRequirementsMet} من ${job.aiRequirementsTotal} متطلبات رئيسية`, `Matched ${job.aiRequirementsMet} of ${job.aiRequirementsTotal} key requirements`)}
           </Text>
         </Card>
 
         {/* About */}
-        <Text style={styles.sectionTitle}>عن الوظيفة</Text>
-        <Text style={styles.body}>{job.about}</Text>
+        <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('عن الوظيفة', 'About the role')}</Text>
+        <Text style={[styles.body, { textAlign: ta }]}>{job.about}</Text>
 
         {/* Requirements */}
-        <Text style={styles.sectionTitle}>المتطلبات</Text>
+        <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('المتطلبات', 'Requirements')}</Text>
         {job.requirements.map((r, i) => (
-          <View key={i} style={styles.bulletRow}>
+          <View key={i} style={[styles.bulletRow, { flexDirection: row }]}>
             <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
-            <Text style={styles.bulletText}>{r}</Text>
+            <Text style={[styles.bulletText, { textAlign: ta }]}>{r}</Text>
           </View>
         ))}
 
         {/* Company */}
-        <Text style={styles.sectionTitle}>عن {job.company}</Text>
-        <Text style={styles.body}>{job.companyAbout}</Text>
+        <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L(`عن ${job.company}`, `About ${job.company}`)}</Text>
+        <Text style={[styles.body, { textAlign: ta }]}>{job.companyAbout}</Text>
 
         <View style={{ height: 90 }} />
       </Screen>
 
       {/* Sticky apply bar */}
-      <View style={[styles.applyBar, shadow.floating]}>
+      <View style={[styles.applyBar, shadow.floating, { flexDirection: row }]}>
         <View>
-          <Text style={styles.applyPrice}>{job.salary.toLocaleString('en-US')} ريال</Text>
-          <Text style={styles.applyMonthly}>شهرياً</Text>
+          <Text style={styles.applyPrice}>{job.salary.toLocaleString('en-US')} {L('ريال', 'SAR')}</Text>
+          <Text style={styles.applyMonthly}>{L('شهرياً', 'monthly')}</Text>
         </View>
         <TouchableOpacity
           style={styles.applyBtn}
           activeOpacity={0.85}
           onPress={() => navigation.navigate('UploadCv', { jobId: job.id })}
         >
-          <Text style={styles.applyText}>قدّم بسيرتك الذاتية</Text>
+          <Text style={styles.applyText}>{L('قدّم بسيرتك الذاتية', 'Apply with your CV')}</Text>
         </TouchableOpacity>
       </View>
     </View>

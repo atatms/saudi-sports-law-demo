@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/context/AuthContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 import { colors } from './src/theme';
 
 // Enable right-to-left layout for the Arabic UI.
@@ -31,12 +32,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NavigationContainer theme={navTheme}>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </NavigationContainer>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <NavigationContainer theme={navTheme}>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }

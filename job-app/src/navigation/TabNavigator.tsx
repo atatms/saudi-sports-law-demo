@@ -9,6 +9,7 @@ import LearningScreen from '../screens/LearningScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { TabParamList } from './types';
 import { colors, font } from '../theme';
+import { useLang } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -20,7 +21,7 @@ const ICONS: Record<keyof TabParamList, { on: keyof typeof Ionicons.glyphMap; of
   Profile: { on: 'person', off: 'person-outline' },
 };
 
-const LABELS: Record<keyof TabParamList, string> = {
+const LABELS_AR: Record<keyof TabParamList, string> = {
   Home: 'الرئيسية',
   Jobs: 'الوظائف',
   Applications: 'طلباتي',
@@ -28,7 +29,17 @@ const LABELS: Record<keyof TabParamList, string> = {
   Profile: 'ملفي',
 };
 
+const LABELS_EN: Record<keyof TabParamList, string> = {
+  Home: 'Home',
+  Jobs: 'Jobs',
+  Applications: 'Applications',
+  Learning: 'Learning',
+  Profile: 'Profile',
+};
+
 export default function TabNavigator() {
+  const { lang } = useLang();
+  const LABELS = lang === 'ar' ? LABELS_AR : LABELS_EN;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

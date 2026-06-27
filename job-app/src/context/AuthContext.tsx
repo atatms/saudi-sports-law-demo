@@ -3,7 +3,10 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 export interface AppUser {
   name: string;
   email: string;
+  phone?: string;
   regionId?: string;
+  educationLevelId?: string;
+  specialization?: string;
 }
 
 export interface CvState {
@@ -19,8 +22,8 @@ interface AuthContextValue {
   cv: CvState;
   signUp: (data: AppUser) => void;
   signIn: (email: string) => void;
-  signInWithPlatform: (platformId: string) => void;
   signOut: () => void;
+  updateUser: (patch: Partial<AppUser>) => void;
   togglePlatform: (id: string) => void;
   setCv: (cv: CvState) => void;
 }
@@ -29,8 +32,10 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
-  // Start with two platforms pre-connected so the feed isn't empty on first run.
-  const [connectedPlatformIds, setConnected] = useState<string[]>(['linkedin', 'taqat']);
+  // Simple in-memory registry so logging in after registering shows the right person.
+  const [registry, setRegistry] = useState<Record<string, AppUser>>({});
+  // Platforms are linked from INSIDE the account; none are connected until the user links them.
+  const [connectedPlatformIds, setConnected] = useState<string[]>([]);
   const [cv, setCv] = useState<CvState>({ uploaded: false, analyzed: false });
 
   const value = useMemo<AuthContextValue>(
@@ -39,21 +44,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: user !== null,
       connectedPlatformIds,
       cv,
-      signUp: (data) => setUser(data),
-      signIn: (email) => setUser({ name: 'أحمد الراشدي', email }),
-      signInWithPlatform: (platformId) => {
-        setConnected((ids) => (ids.includes(platformId) ? ids : [...ids, platformId]));
-        setUser({ name: 'أحمد الراشدي', email: 'ahmad@example.com' });
+      signUp: (data) => {
+        setRegistry((r) => ({ ...r, [data.email.toLowerCase()]: data }));
+        setUser(data);
+      },
+      signIn: (email) => {
+        const known = registry[email.toLowerCase()];
+        if (known) {
+          setUser(known);
+        } else {
+          // Unknown email: derive a display name from the address (demo only).
+          const local = email.split('@')[0] || 'مستخدم';
+          setUser({ name: local, email });
+        }
       },
       signOut: () => {
         setUser(null);
         setCv({ uploaded: false, analyzed: false });
+        setConnected([]);
       },
+      updateUser: (patch) =>
+        setUser((u) => (u ? { ...u, ...patch } : u)),
       togglePlatform: (id) =>
         setConnected((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])),
       setCv,
     }),
-    [user, connectedPlatformIds, cv],
+    [user, registry, connectedPlatformIds, cv],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

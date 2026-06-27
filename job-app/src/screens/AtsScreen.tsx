@@ -11,6 +11,7 @@ import TopBar from '../components/TopBar';
 import { colors, font, radius, spacing } from '../theme';
 import { atsScore, atsPlatforms, atsChecks, atsMissingKeywords } from '../data/profile';
 import { AtsCheck } from '../data/types';
+import { useLang } from '../context/LanguageContext';
 import { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Ats'>;
@@ -22,25 +23,28 @@ const CHECK_META: Record<AtsCheck['status'], { icon: keyof typeof import('@expo/
 };
 
 export default function AtsScreen({ navigation }: Props) {
+  const { L, isRTL } = useLang();
+  const ta = isRTL ? 'right' : 'left';
+  const row = isRTL ? 'row-reverse' : 'row';
   return (
     <Screen>
-      <TopBar title="توافق ATS" onBack={() => navigation.goBack()} rightLabel="التقرير" />
+      <TopBar title={L('توافق ATS', 'ATS compatibility')} onBack={() => navigation.goBack()} rightLabel={L('التقرير', 'Report')} />
 
       {/* Score */}
       <View style={styles.scoreWrap}>
         <ScoreRing score={atsScore} size={120} strokeWidth={9} color={colors.primary} />
-        <View style={styles.passBadge}>
+        <View style={[styles.passBadge, { flexDirection: row }]}>
           <Ionicons name="trophy" size={14} color={colors.primary} />
-          <Text style={styles.passText}>إيجابي للنجاح</Text>
+          <Text style={styles.passText}>{L('إيجابي للنجاح', 'Likely to pass')}</Text>
         </View>
-        <Text style={styles.scoreSub}>أصلح تحذيرين للوصول إلى 90+</Text>
+        <Text style={styles.scoreSub}>{L('أصلح تحذيرين للوصول إلى 90+', 'Fix 2 warnings to reach 90+')}</Text>
       </View>
 
       {/* Platforms */}
-      <Text style={styles.sectionTitle}>حسب منصة ATS</Text>
-      <View style={styles.platformGrid}>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('حسب منصة ATS', 'By ATS platform')}</Text>
+      <View style={[styles.platformGrid, { flexDirection: row }]}>
         {atsPlatforms.map((p) => (
-          <View key={p.name} style={styles.platformTile}>
+          <View key={p.name} style={[styles.platformTile, { flexDirection: row }]}>
             <Text style={styles.platformName}>{p.name}</Text>
             <Text style={[styles.platformScore, { color: p.score >= 85 ? colors.primary : colors.gold }]}>{p.score}%</Text>
           </View>
@@ -48,16 +52,16 @@ export default function AtsScreen({ navigation }: Props) {
       </View>
 
       {/* Checks */}
-      <Text style={styles.sectionTitle}>الفحوصات التقنية</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('الفحوصات التقنية', 'Technical checks')}</Text>
       {atsChecks.map((c, i) => {
         const meta = CHECK_META[c.status];
         return (
           <Card key={i} style={styles.checkCard}>
-            <View style={styles.checkTop}>
+            <View style={[styles.checkTop, { flexDirection: row }]}>
               <Ionicons name={meta.icon} size={20} color={meta.color} />
-              <Text style={styles.checkTitle}>{c.title}</Text>
+              <Text style={[styles.checkTitle, { textAlign: ta }]}>{c.title}</Text>
             </View>
-            <Text style={styles.checkDetail}>{c.detail}</Text>
+            <Text style={[styles.checkDetail, { textAlign: ta }]}>{c.detail}</Text>
             {c.action ? (
               <TouchableOpacity style={styles.checkAction} activeOpacity={0.85}>
                 <Text style={styles.checkActionText}>{c.action}</Text>
@@ -68,18 +72,18 @@ export default function AtsScreen({ navigation }: Props) {
       })}
 
       {/* Missing keywords */}
-      <Text style={styles.sectionTitle}>الكلمات المفتاحية الناقصة</Text>
+      <Text style={[styles.sectionTitle, { textAlign: ta }]}>{L('الكلمات المفتاحية الناقصة', 'Missing keywords')}</Text>
       <Card flat style={{ marginTop: spacing.sm }}>
-        <View style={styles.keywordsWrap}>
+        <View style={[styles.keywordsWrap, { flexDirection: row }]}>
           {atsMissingKeywords.map((k) => (
             <Chip key={k} label={k} variant="accent" />
           ))}
         </View>
       </Card>
 
-      <TouchableOpacity style={styles.insertBtn} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.insertBtn, { flexDirection: row }]} activeOpacity={0.85}>
         <Ionicons name="sparkles" size={15} color={colors.white} />
-        <Text style={styles.insertText}>إدراج الكلمات المفتاحية تلقائياً في السيرة الذاتية</Text>
+        <Text style={styles.insertText}>{L('إدراج الكلمات المفتاحية تلقائياً في السيرة الذاتية', 'Auto-insert keywords into the CV')}</Text>
       </TouchableOpacity>
     </Screen>
   );
