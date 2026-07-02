@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>الطائر الواقعي — Realistic Flappy</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body {
+    height:100%; background:#0b1020; overflow:hidden; touch-action:manipulation;
+    font-family:"Segoe UI", Tahoma, Arial, sans-serif;
+    -webkit-user-select:none; user-select:none;
+  }
+  #wrap {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  }
+  canvas {
+    display:block; max-width:100vw; max-height:100vh;
+    box-shadow:0 20px 80px rgba(0,0,0,.6); border-radius:6px;
+  }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="480" height="720"></canvas></div>
+<script>
+"use strict";
+/* ============================================================
+   الطائر الواقعي — لعبة بأسلوب فلابي بيرد برسومات واقعية
+   نفس الآلية والتحدي: اضغط للرفرفة وتجاوز العوائق
+   مراحل: نهار → غروب → ليل → فجر عاصف ... بصعوبة متصاعدة
+   ============================================================ */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+const GROUND_H = 96;
+const GROUND_Y = H - GROUND_H;
+
+/* ---------- تحجيم متجاوب ---------- */
+function fitCanvas(){
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  canvas.style.width  = (W * s) + "px";
+  canvas.style.height = (H * s) + "px";
+}
+addEventListener("resize", fitCanvas); fitCanvas();
+
+/* ---------- أدوات ---------- */
+const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+const lerp  = (a,b,t)=> a + (b-a)*t;
+const rand  = (a,b)=> a + Math.random()*(b-a);
+function lerpColor(c1, c2, t){
+  return [ Math.round(lerp(c1[0],c2[0],t)),
+           Math.round(lerp(c1[1],c2[1],t)),
+           Math.round(lerp(c1[2],c2[2],t)) ];
+}
+const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+/* ---------- الصوت (WebAudio مركب — بدون ملفات) ---------- */
+let AC = null;
+function audio(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function sfxFlap(){
+  try{
+    const ac = audio(), t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type="triangle"; o.frequency.setValueAtTime(420,t);
+    o.frequency.exponentialRampToValueAtTime(180, t+.12);
+    g.gain.setValueAtTime(.16,t); g.gain.exponentialRampToValueAtTime(.001,t+.13);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+.14);
+    // هفيف الجناح
+    const buf = ac.createBuffer(1, ac.sampleRate*0.08, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1)*(1-i/d.length);
+    const n = ac.createBufferSource(), ng = ac.createGain(), f = ac.createBiquadFilter();
+    n.buffer=buf; f.type="bandpass"; f.frequency.value=900;
+    ng.gain.setValueAtTime(.09,t); ng.gain.exponentialRampToValueAtTime(.001,t+.08);
+    n.connect(f).connect(ng).connect(ac.destination); n.start(t);
+  }catch(e){}
+}
+function sfxScore(){
+  try{
+    const ac = audio(), t = ac.currentTime;
+    [880, 1174.7].forEach((fq,i)=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type="sine"; o.frequency.value=fq;
+      g.gain.setValueAtTime(0.0001, t+i*.07);
+      g.gain.exponentialRampToValueAtTime(.14, t+i*.07+.02);
+      g.gain.exponentialRampToValueAtTime(.001, t+i*.07+.18);
+      o.connect(g).connect(ac.destination); o.start(t+i*.07); o.stop(t+i*.07+.2);
+    });
+  }catch(e){}
+}
+function sfxHit(){
+  try{
+    const ac = audio(), t = ac.currentTime;
+    const buf = ac.createBuffer(1, ac.sampleRate*0.25, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+    const n=ac.createBufferSource(), g=ac.createGain(), f=ac.createBiquadFilter();
+    n.buffer=buf; f.type="lowpass"; f.frequency.value=700;
+    g.gain.setValueAtTime(.5,t); g.gain.exponentialRampToValueAtTime(.001,t+.25);
+    n.connect(f).connect(g).connect(ac.destination); n.start(t);
+    const o=ac.createOscillator(), og=ac.createGain();
+    o.type="sawtooth"; o.frequency.setValueAtTime(160,t);
+    o.frequency.exponentialRampToValueAtTime(50,t+.3);
+    og.gain.setValueAtTime(.25,t); og.gain.exponentialRampToValueAtTime(.001,t+.3);
+    o.connect(og).connect(ac.destination); o.start(t); o.stop(t+.32);
+  }catch(e){}
+}
+
+/* ---------- المراحل (نفس التحدي، صعوبة متصاعدة) ---------- */
+/* كل 10 نقاط = مرحلة جديدة: أجواء مختلفة وسرعة أعلى وفجوة أضيق */
+const STAGES = [
+  { name:"الصباح",        speed:2.3, gap:185, spacing:265,
+    top:[110,168,220], bottom:[196,226,238], sun:true,  stars:0, rain:0,  fog:.00 },
+  { name:"الظهيرة",       speed:2.6, gap:172, spacing:255,
+    top:[70,140,214],  bottom:[172,214,236], sun:true,  stars:0, rain:0,  fog:.00 },
+  { name:"الغروب",        speed:2.9, gap:160, spacing:245,
+    top:[86,60,120],   bottom:[244,150,88],  sun:true,  stars:.3, rain:0, fog:.05 },
+  { name:"الليل",         speed:3.2, gap:150, spacing:235,
+    top:[8,12,34],     bottom:[36,52,92],    sun:false, stars:1, rain:0,  fog:.08 },
+  { name:"العاصفة",       speed:3.5, gap:142, spacing:228,
+    top:[28,34,46],    bottom:[74,86,100],   sun:false, stars:0, rain:1,  fog:.16 },
+  { name:"فجر جديد",      speed:3.8, gap:136, spacing:222,
+    top:[120,80,140],  bottom:[250,190,120], sun:true,  stars:.15, rain:0, fog:.06 },
+];
+const POINTS_PER_STAGE = 10;
+function stageFor(score){
+  const i = Math.floor(score / POINTS_PER_STAGE);
+  if(i < STAGES.length) return { ...STAGES[i], index:i };
+  // ما بعد المراحل: تدوير الأجواء مع استمرار تصاعد بسيط للصعوبة حتى حد أقصى
+  const extra = i - STAGES.length + 1;
+  const base = STAGES[(i % STAGES.length)];
+  return {
+    ...base, index:i,
+    speed: Math.min(base.speed + extra*.12, 5.2),
+    gap:   Math.max(base.gap   - extra*2, 118),
+    spacing: Math.max(base.spacing - extra*2, 205),
+  };
+}
+
+/* ---------- حالة اللعبة ---------- */
+const ST_MENU = 0, ST_PLAY = 1, ST_DEAD = 2;
+let state = ST_MENU;
+let frames = 0;
+let score = 0;
+let best = +(localStorage.getItem("realFlappyBest") || 0);
+let stage = stageFor(0);
+let stageBanner = 0;          // مؤقّت إظهار اسم المرحلة
+let atmo = null;              // ألوان الأجواء الحالية (تتحول بسلاسة)
+let shake = 0;                // اهتزاز الشاشة عند الاصطدام
+let flashA = 0;               // وميض أبيض عند الاصطدام
+let deadTimer = 0;
+
+/* ---------- الطائر ---------- */
+const bird = {
+  x: W*0.32, y: H*0.42, r: 15,
+  vy: 0, rot: 0,
+  wingPhase: 0, wingSpeed: 0,
+  gravity: 0.42, flapV: -7.6,
+  alive: true,
+  reset(){
+    this.y = H*0.42; this.vy = 0; this.rot = 0; this.alive = true;
+    this.wingPhase = 0; this.wingSpeed = 0;
+  },
+  flap(){
+    if(!this.alive) return;
+    this.vy = this.flapV;
+    this.wingSpeed = 1;
+    sfxFlap();
+    spawnFeathers(this.x-10, this.y+6, 2, .5);
+  },
+  update(){
+    this.vy += this.gravity;
+    this.vy = Math.min(this.vy, 11);
+    this.y += this.vy;
+    // زاوية الجسم حسب السرعة (مثل الطيران الحقيقي)
+    const target = this.vy < 0 ? -0.45 : clamp(this.vy/11, 0, 1) * 1.25;
+    this.rot = lerp(this.rot, target, this.alive ? .15 : .06);
+    // رفرفة الجناح
+    this.wingSpeed = lerp(this.wingSpeed, this.vy < 0 ? 1 : .25, .1);
+    this.wingPhase += this.wingSpeed * .55;
+    // السقف
+    if(this.y < this.r){ this.y = this.r; this.vy = Math.max(this.vy, 0); }
+  },
+  idleFloat(){ // في القائمة
+    this.y = H*0.42 + Math.sin(frames*.06)*9;
+    this.rot = Math.sin(frames*.06+1)*.08;
+    this.wingPhase += .32;
+  }
+};
+
+/* ---------- رسم الطائر (عصفور دوري واقعي بالتدرجات والظلال) ---------- */
+function drawBird(x, y, rot, wingPhase, dead){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+
+  // ظل ناعم تحت الجسم
+  ctx.save();
+  ctx.rotate(-rot);
+  const groundDist = clamp((GROUND_Y - y)/300, 0, 1);
+  ctx.globalAlpha = .25*(1-groundDist*.7);
+  ctx.beginPath();
+  ctx.ellipse(0, GROUND_Y - y - 4, 26*(1-groundDist*.4), 6*(1-groundDist*.4), 0, 0, Math.PI*2);
+  ctx.fillStyle = "#000"; ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  // الذيل — ريشات متدرجة
+  ctx.save();
+  ctx.rotate(Math.sin(wingPhase*.5)*.06);
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.quadraticCurveTo(-26, -4+i*4, -34, -3+i*5);
+    ctx.quadraticCurveTo(-25, 2+i*3, -10, 4);
+    ctx.closePath();
+    ctx.fillStyle = ["#4a3423","#5d442e","#3c2a1c"][i];
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // الجناح الخلفي (البعيد) — أغمق
+  const wingA = Math.sin(wingPhase) * .9;
+  drawWing(-2, -2, wingA + .35, .8, true);
+
+  // الجسم — تدرج ريش بني/بيج مثل الدوري
+  const bodyG = ctx.createLinearGradient(0,-16,0,16);
+  bodyG.addColorStop(0,  "#8a6a48");
+  bodyG.addColorStop(.45,"#a8865e");
+  bodyG.addColorStop(.72,"#d9c4a3");
+  bodyG.addColorStop(1,  "#efe3cd");
+  ctx.beginPath();
+  ctx.moveTo(16, -3);
+  ctx.bezierCurveTo(15, -13, 4, -16, -5, -13);
+  ctx.bezierCurveTo(-14, -10, -16, 2, -11, 8);
+  ctx.bezierCurveTo(-6, 14, 8, 14, 13, 7);
+  ctx.bezierCurveTo(15.5, 4, 16.3, 1, 16, -3);
+  ctx.closePath();
+  ctx.fillStyle = bodyG; ctx.fill();
+
+  // خطوط ريش خفيفة على الجسم
+  ctx.strokeStyle = "rgba(90,60,35,.28)"; ctx.lineWidth = 1;
+  for(let i=0;i<4;i++){
+    ctx.beginPath();
+    ctx.arc(-2+i*3, 2, 9-i*1.4, .5, 1.9);
+    ctx.stroke();
+  }
+
+  // الرأس
+  const headG = ctx.createRadialGradient(9,-9,2, 8,-7,11);
+  headG.addColorStop(0, "#9a7550");
+  headG.addColorStop(1, "#6e5236");
+  ctx.beginPath(); ctx.arc(8,-7, 9.5, 0, Math.PI*2);
+  ctx.fillStyle = headG; ctx.fill();
+
+  // خد فاتح
+  ctx.beginPath(); ctx.arc(10,-4.5, 4.6, 0, Math.PI*2);
+  ctx.fillStyle = "#e8d9be"; ctx.fill();
+
+  // المنقار — مخروطي بظل
+  const beakG = ctx.createLinearGradient(14,-8,24,-4);
+  beakG.addColorStop(0,"#5b4a33"); beakG.addColorStop(1,"#2f2415");
+  ctx.beginPath();
+  ctx.moveTo(15,-9.5); ctx.lineTo(25,-6.2); ctx.lineTo(15,-4);
+  ctx.closePath(); ctx.fillStyle = beakG; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(15,-6.6); ctx.lineTo(24.4,-6.2);
+  ctx.strokeStyle="rgba(0,0,0,.4)"; ctx.lineWidth=.8; ctx.stroke();
+
+  // العين — لمعة حقيقية
+  if(dead){
+    ctx.strokeStyle="#1a120a"; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(8.6,-11.4); ctx.lineTo(13.4,-6.6); ctx.moveTo(13.4,-11.4); ctx.lineTo(8.6,-6.6); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(11,-9, 3.1, 0, Math.PI*2); ctx.fillStyle="#f5efe2"; ctx.fill();
+    ctx.beginPath(); ctx.arc(11.6,-8.8, 2, 0, Math.PI*2); ctx.fillStyle="#241a10"; ctx.fill();
+    ctx.beginPath(); ctx.arc(12.3,-9.6, .8, 0, Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+  }
+
+  // الجناح الأمامي (القريب)
+  drawWing(-1, -3, wingA, 1, false);
+
+  ctx.restore();
+}
+function drawWing(px, py, angle, scale, back){
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(clamp(angle, -1.15, 1.0));
+  ctx.scale(scale, scale);
+  const g = ctx.createLinearGradient(0,0,-6,-22);
+  if(back){ g.addColorStop(0,"#5d452e"); g.addColorStop(1,"#3d2d1e"); }
+  else    { g.addColorStop(0,"#7c5f40"); g.addColorStop(.6,"#5f4831"); g.addColorStop(1,"#46351f"); }
+  // ريشات الجناح
+  ctx.beginPath();
+  ctx.moveTo(2, 0);
+  ctx.bezierCurveTo(-2,-10, -8,-18, -20,-22);
+  ctx.bezierCurveTo(-14,-12, -12,-6, -13,-2);
+  ctx.bezierCurveTo(-9, 2, -3, 3, 2, 0);
+  ctx.closePath();
+  ctx.fillStyle = g; ctx.fill();
+  // فصوص الريش
+  ctx.strokeStyle = back ? "rgba(0,0,0,.25)" : "rgba(35,22,10,.4)";
+  ctx.lineWidth = 1;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.moveTo(-2-i*3, 1-i*1);
+    ctx.quadraticCurveTo(-8-i*4, -8-i*4, -18-i*1, -20-i*1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- العوائق: أنابيب معدنية صدئة بإضاءة واقعية ---------- */
+const PIPE_W = 74;
+let pipes = [];
+function resetPipes(){ pipes = []; }
+function spawnPipe(){
+  const margin = 90;
+  const gap = stage.gap;
+  const cy = rand(margin + gap/2, GROUND_Y - margin - gap/2);
+  pipes.push({ x: W + 40, cy, gap, passed:false, seed: Math.random()*1000 });
+}
+function updatePipes(){
+  const sp = stage.speed;
+  for(const p of pipes) p.x -= sp;
+  if(pipes.length && pipes[0].x < -PIPE_W - 60) pipes.shift();
+  const last = pipes[pipes.length-1];
+  if(!last || (W + 40) - last.x >= stage.spacing) spawnPipe();
+}
+function drawPipes(night){
+  for(const p of pipes){
+    drawPipe(p.x, 0, p.cy - p.gap/2, p.seed, true, night);              // علوي
+    drawPipe(p.x, p.cy + p.gap/2, GROUND_Y - (p.cy + p.gap/2), p.seed+7, false, night); // سفلي
+  }
+}
+function drawPipe(x, y, h, seed, isTop, night){
+  if(h <= 0) return;
+  ctx.save();
+  ctx.translate(x, y);
+
+  // جسم الأنبوب — معدن مطلي أخضر متآكل بإضاءة جانبية
+  const g = ctx.createLinearGradient(0,0,PIPE_W,0);
+  if(night){
+    g.addColorStop(0,   "#12281a");
+    g.addColorStop(.18, "#245038");
+    g.addColorStop(.42, "#3f7a55");
+    g.addColorStop(.55, "#4c8a62");
+    g.addColorStop(.8,  "#1d3f2b");
+    g.addColorStop(1,   "#0d1f13");
+  } else {
+    g.addColorStop(0,   "#274d2e");
+    g.addColorStop(.18, "#4b7f4a");
+    g.addColorStop(.42, "#7fb36f");
+    g.addColorStop(.55, "#95c47e");
+    g.addColorStop(.8,  "#3c6b3c");
+    g.addColorStop(1,   "#1d3a22");
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, PIPE_W, h);
+
+  // لمعة عمودية (انعكاس معدني)
+  const shine = ctx.createLinearGradient(PIPE_W*.4,0,PIPE_W*.62,0);
+  shine.addColorStop(0,"rgba(255,255,255,0)");
+  shine.addColorStop(.5,`rgba(255,255,255,${night?.10:.22})`);
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(PIPE_W*.35, 0, PIPE_W*.3, h);
+
+  // وصلات أفقية (شرائح الأنبوب) + براغي
+  const segH = 46;
+  const off = Math.floor(seed*13)%segH;
+  ctx.strokeStyle = "rgba(0,0,0,.30)"; ctx.lineWidth = 2;
+  for(let sy = segH - off; sy < h - 8; sy += segH){
+    ctx.beginPath(); ctx.moveTo(2, sy); ctx.lineTo(PIPE_W-2, sy); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.14)";
+    ctx.fillRect(2, sy+1.5, PIPE_W-4, 1.5);
+    // براغي
+    for(const bx of [10, PIPE_W-10]){
+      ctx.beginPath(); ctx.arc(bx, sy, 2.1, 0, Math.PI*2);
+      ctx.fillStyle = "rgba(20,28,18,.85)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(bx-.6, sy-.6, .8, 0, Math.PI*2);
+      ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fill();
+    }
+  }
+
+  // بقع صدأ وطحالب (ثابتة حسب seed)
+  for(let i=0;i<6;i++){
+    const rx = ((Math.sin(seed*3.7 + i*17.3)+1)/2) * (PIPE_W-16) + 8;
+    const ry = ((Math.sin(seed*9.1 + i*29.7)+1)/2) * Math.max(h-20, 1) + 10;
+    const rr = 3 + ((Math.sin(seed*5.3+i*7.7)+1)/2)*7;
+    if(ry > h-6) continue;
+    ctx.beginPath(); ctx.ellipse(rx, ry, rr, rr*.65, i, 0, Math.PI*2);
+    ctx.fillStyle = i%2 ? "rgba(96,70,34,.30)" : "rgba(40,72,38,.35)";
+    ctx.fill();
+  }
+
+  // فوهة الأنبوب (الطوق) عند جهة الفجوة
+  const capH = 30, capOver = 7;
+  const capY = isTop ? h - capH : 0;
+  const cg = ctx.createLinearGradient(-capOver,0,PIPE_W+capOver,0);
+  if(night){
+    cg.addColorStop(0,"#15301f"); cg.addColorStop(.2,"#2e5c40");
+    cg.addColorStop(.5,"#58996c"); cg.addColorStop(.8,"#224832"); cg.addColorStop(1,"#0f2415");
+  } else {
+    cg.addColorStop(0,"#2d5732"); cg.addColorStop(.2,"#5c9155");
+    cg.addColorStop(.5,"#a3cf8c"); cg.addColorStop(.8,"#417046"); cg.addColorStop(1,"#22421f");
+  }
+  ctx.fillStyle = cg;
+  roundRect(-capOver, capY, PIPE_W + capOver*2, capH, 5);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,.45)"; ctx.lineWidth = 1.5;
+  roundRect(-capOver, capY, PIPE_W + capOver*2, capH, 5);
+  ctx.stroke();
+  // حافة الفوهة الداخلية المظللة
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fillRect(-capOver+3, isTop ? capY + capH - 5 : capY + 2, PIPE_W + capOver*2 - 6, 3);
+
+  // ظل الطوق على الجسم
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  if(isTop) ctx.fillRect(0, capY - 6, PIPE_W, 6);
+  else      ctx.fillRect(0, capY + capH, PIPE_W, 6);
+
+  ctx.restore();
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ---------- الخلفية الواقعية: سماء/شمس/نجوم/غيوم/جبال/أشجار/أرض ---------- */
+let clouds = [], stars = [], raindrops = [];
+function initSky(){
+  clouds = [];
+  for(let i=0;i<7;i++){
+    clouds.push({
+      x: rand(0,W), y: rand(30, H*0.42),
+      s: rand(.5,1.4), sp: rand(.15,.45), puffs: []
+    });
+    const c = clouds[i];
+    const n = 4 + Math.floor(rand(0,4));
+    for(let j=0;j<n;j++)
+      c.puffs.push({ dx: rand(-46,46), dy: rand(-12,12), r: rand(16,30) });
+  }
+  stars = [];
+  for(let i=0;i<90;i++)
+    stars.push({ x: rand(0,W), y: rand(0, H*0.6), r: rand(.5,1.6), tw: rand(0,Math.PI*2) });
+  raindrops = [];
+  for(let i=0;i<110;i++)
+    raindrops.push({ x: rand(0,W), y: rand(0,H), l: rand(10,20), sp: rand(9,15) });
+}
+initSky();
+
+/* جبال ثابتة الشكل (نُولّد نقاطها مرة واحدة) */
+function ridge(seed, n, minY, maxY){
+  const pts = [];
+  for(let i=0;i<=n;i++){
+    const t = i/n;
+    const y = minY + (Math.sin(seed + t*9.3) * .5 + .5) * (maxY-minY)
+              + Math.sin(seed*2.1 + t*23.7) * 8;
+    pts.push(y);
+  }
+  return pts;
+}
+const farRidge  = ridge(3.1, 24, H*0.38, H*0.55);
+const nearRidge = ridge(7.7, 24, H*0.50, H*0.66);
+let scrollFar = 0, scrollNear = 0, scrollGround = 0;
+
+function updateAtmo(){
+  const t = stage;
+  if(!atmo) atmo = { top:[...t.top], bottom:[...t.bottom], stars:t.stars, fog:t.fog, rain:t.rain, sun:t.sun?1:0 };
+  const k = .02;
+  atmo.top    = lerpColor(atmo.top, t.top, k);
+  atmo.bottom = lerpColor(atmo.bottom, t.bottom, k);
+  atmo.stars  = lerp(atmo.stars, t.stars, k);
+  atmo.fog    = lerp(atmo.fog, t.fog, k);
+  atmo.rain   = lerp(atmo.rain, t.rain, k);
+  atmo.sun    = lerp(atmo.sun, t.sun?1:0, k);
+}
+function isNightish(){ return (atmo.top[0]+atmo.top[1]+atmo.top[2]) < 180; }
+
+function drawBackground(){
+  const night = isNightish();
+
+  // السماء
+  const sky = ctx.createLinearGradient(0,0,0,GROUND_Y);
+  sky.addColorStop(0, rgb(atmo.top));
+  sky.addColorStop(1, rgb(atmo.bottom));
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H);
+
+  // النجوم
+  if(atmo.stars > .02){
+    for(const s of stars){
+      const a = atmo.stars * (0.5 + 0.5*Math.sin(frames*.05 + s.tw));
+      ctx.globalAlpha = a;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = "#eef3ff"; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // القمر في الليل
+    if(atmo.stars > .6){
+      ctx.save();
+      ctx.globalAlpha = clamp((atmo.stars-.6)/.4, 0, 1);
+      const mg = ctx.createRadialGradient(W*.78, 110, 8, W*.78, 110, 60);
+      mg.addColorStop(0,"rgba(240,244,255,.9)");
+      mg.addColorStop(.35,"rgba(220,228,255,.35)");
+      mg.addColorStop(1,"rgba(220,228,255,0)");
+      ctx.fillStyle = mg;
+      ctx.beginPath(); ctx.arc(W*.78, 110, 60, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*.78, 110, 22, 0, Math.PI*2);
+      ctx.fillStyle = "#e9edf7"; ctx.fill();
+      // فوهات القمر
+      ctx.fillStyle = "rgba(160,170,195,.5)";
+      ctx.beginPath(); ctx.arc(W*.78-7, 104, 4.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*.78+6, 114, 3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(W*.78+2, 100, 2.2, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // الشمس مع توهج
+  if(atmo.sun > .05){
+    ctx.save();
+    ctx.globalAlpha = atmo.sun;
+    const sx = W*.22, sy = 130;
+    const sg = ctx.createRadialGradient(sx,sy,6, sx,sy,95);
+    const warm = atmo.bottom[0] > 220 && atmo.bottom[1] < 200; // غروب
+    sg.addColorStop(0, warm ? "rgba(255,214,140,1)" : "rgba(255,250,220,1)");
+    sg.addColorStop(.18, warm ? "rgba(255,170,90,.85)" : "rgba(255,244,190,.8)");
+    sg.addColorStop(1, "rgba(255,240,180,0)");
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(sx,sy,95,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // الجبال البعيدة (بارالاكس بطيء) بضباب جوي
+  drawRidge(farRidge, scrollFar, night
+    ? ["rgba(30,40,66,.9)","rgba(22,30,52,.95)"]
+    : ["rgba(112,134,168,.75)","rgba(88,110,148,.85)"], 0);
+  // الجبال القريبة
+  drawRidge(nearRidge, scrollNear, night
+    ? ["rgba(18,26,44,.98)","rgba(12,18,32,1)"]
+    : ["rgba(70,96,120,.92)","rgba(52,76,98,.98)"], 1);
+
+  // الغيوم الحجمية
+  for(const c of clouds){
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.scale(c.s, c.s*.7);
+    for(const p of c.puffs){
+      const cg = ctx.createRadialGradient(p.dx, p.dy - p.r*.3, p.r*.15, p.dx, p.dy, p.r);
+      if(night){
+        cg.addColorStop(0, "rgba(150,162,190,.5)");
+        cg.addColorStop(1, "rgba(120,132,160,0)");
+      } else {
+        cg.addColorStop(0, "rgba(255,255,255,.95)");
+        cg.addColorStop(.6, "rgba(250,250,252,.55)");
+        cg.addColorStop(1, "rgba(245,246,250,0)");
+      }
+      ctx.fillStyle = cg;
+      ctx.beginPath(); ctx.arc(p.dx, p.dy, p.r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // أشجار بعيدة على خط الأرض
+  drawTreeline(night);
+}
+function drawRidge(pts, scroll, colors, near){
+  const n = pts.length - 1;
+  const segW = W / (n/2);              // نصف النقاط يظهر على الشاشة
+  const total = segW * n;
+  const off = ((scroll % total) + total) % total;
+  ctx.beginPath();
+  ctx.moveTo(-2, GROUND_Y+2);
+  for(let px = -segW; px <= W + segW; px += 6){
+    const gx = (px + off) / segW;
+    const i = Math.floor(gx) % n;
+    const t = gx - Math.floor(gx);
+    const y = lerp(pts[(i+n)%n], pts[((i+1)+n)%n], t);
+    ctx.lineTo(px, y);
+  }
+  ctx.lineTo(W+2, GROUND_Y+2);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, H*0.3, 0, GROUND_Y);
+  g.addColorStop(0, colors[0]); g.addColorStop(1, colors[1]);
+  ctx.fillStyle = g;
+  ctx.fill();
+  // غطاء ثلجي خفيف على القمم البعيدة
+  if(!near){
+    ctx.save();
+    ctx.clip();
+    const snow = ctx.createLinearGradient(0, H*0.3, 0, H*0.5);
+    snow.addColorStop(0, "rgba(235,240,248,.35)");
+    snow.addColorStop(1, "rgba(235,240,248,0)");
+    ctx.fillStyle = snow;
+    ctx.fillRect(0, 0, W, H*0.5);
+    ctx.restore();
+  }
+}
+function drawTreeline(night){
+  const spacing = 46;
+  const total = Math.ceil(W/spacing) + 3;
+  const off = (scrollNear*1.6) % spacing;
+  for(let i=0;i<total;i++){
+    const x = i*spacing - off;
+    const s = .7 + ((i*37)%10)/14;
+    const h = 42*s;
+    const y = GROUND_Y;
+    ctx.save();
+    ctx.translate(x, y);
+    // جذع
+    ctx.fillStyle = night ? "#101a12" : "#4a3a28";
+    ctx.fillRect(-2.5, -h*.35, 5, h*.35);
+    // أوراق مخروطية بطبقات
+    for(let L=0; L<3; L++){
+      const lw = (26 - L*6)*s, ly = -h*.3 - L*h*.22;
+      const tg = ctx.createLinearGradient(-lw,0,lw,0);
+      if(night){ tg.addColorStop(0,"#0a140d"); tg.addColorStop(.5,"#16281a"); tg.addColorStop(1,"#060d08"); }
+      else     { tg.addColorStop(0,"#27461f"); tg.addColorStop(.5,"#3f6b30"); tg.addColorStop(1,"#1c3517"); }
+      ctx.beginPath();
+      ctx.moveTo(0, ly - h*.34);
+      ctx.lineTo(lw, ly);
+      ctx.lineTo(-lw, ly);
+      ctx.closePath();
+      ctx.fillStyle = tg; ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+function drawGround(night){
+  // تربة بطبقات
+  const g = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+  if(night){
+    g.addColorStop(0,"#1c2a14"); g.addColorStop(.16,"#141d0f");
+    g.addColorStop(.4,"#231a10"); g.addColorStop(1,"#171009");
+  } else {
+    g.addColorStop(0,"#5d8f3e"); g.addColorStop(.16,"#4a7431");
+    g.addColorStop(.4,"#6b4f31"); g.addColorStop(1,"#4a3520");
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, GROUND_Y, W, GROUND_H);
+
+  // عشب أمامي متحرك
+  const off = scrollGround % 26;
+  for(let x=-26; x<W+26; x+=26){
+    const gx = x - off;
+    ctx.beginPath();
+    ctx.moveTo(gx, GROUND_Y+2);
+    ctx.quadraticCurveTo(gx+6, GROUND_Y-10, gx+3, GROUND_Y-14);
+    ctx.quadraticCurveTo(gx+9, GROUND_Y-8, gx+13, GROUND_Y+2);
+    ctx.closePath();
+    ctx.fillStyle = night ? "rgba(30,52,26,.9)" : "rgba(74,116,49,.95)";
+    ctx.fill();
+  }
+  // حصى
+  for(let i=0;i<14;i++){
+    const px = ((i*167 - scrollGround*1.0) % (W+40) + (W+40)) % (W+40) - 20;
+    const py = GROUND_Y + 30 + (i*53)%50;
+    ctx.beginPath(); ctx.ellipse(px, py, 4+(i%3)*2, 2.5+(i%3), 0, 0, Math.PI*2);
+    ctx.fillStyle = night ? "rgba(60,50,40,.6)" : "rgba(120,98,70,.7)";
+    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px-1, py-1, 2+(i%3), 1.2+(i%3)*.5, 0, 0, Math.PI*2);
+    ctx.fillStyle = night ? "rgba(90,80,66,.4)" : "rgba(175,150,115,.6)";
+    ctx.fill();
+  }
+  // خط ظل تحت حافة العشب
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.fillRect(0, GROUND_Y, W, 3);
+}
+function drawWeather(){
+  // مطر
+  if(atmo.rain > .03){
+    ctx.save();
+    ctx.strokeStyle = `rgba(190,210,235,${.5*atmo.rain})`;
+    ctx.lineWidth = 1.3;
+    for(const r of raindrops){
+      ctx.beginPath();
+      ctx.moveTo(r.x, r.y);
+      ctx.lineTo(r.x - 3, r.y + r.l);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // ومضة برق نادرة
+    if(atmo.rain > .6 && Math.random() < .004) flashA = Math.max(flashA, .35);
+  }
+  // ضباب سفلي
+  if(atmo.fog > .01){
+    const fg = ctx.createLinearGradient(0, GROUND_Y-130, 0, GROUND_Y);
+    fg.addColorStop(0, "rgba(200,210,220,0)");
+    fg.addColorStop(1, `rgba(200,210,225,${atmo.fog})`);
+    ctx.fillStyle = fg;
+    ctx.fillRect(0, GROUND_Y-130, W, 130);
+  }
+}
+function updateWeather(){
+  for(const c of clouds){
+    c.x -= c.sp * (stage.speed/2.3);
+    if(c.x < -120){ c.x = W + 120; c.y = rand(30, H*0.42); }
+  }
+  if(atmo.rain > .03){
+    for(const r of raindrops){
+      r.y += r.sp; r.x -= 2.5;
+      if(r.y > H){ r.y = -20; r.x = rand(0, W+60); }
+      if(r.x < -10) r.x = W + 10;
+    }
+  }
+}
+
+/* ---------- الجسيمات (ريش عند الرفرفة والاصطدام) ---------- */
+let feathers = [];
+function spawnFeathers(x, y, n, power){
+  for(let i=0;i<n;i++){
+    feathers.push({
+      x, y,
+      vx: rand(-2,-.3)*power - 1, vy: rand(-2.2,1.2)*power,
+      rot: rand(0,Math.PI*2), vr: rand(-.2,.2),
+      size: rand(3,6.5), life: 1,
+      color: ["#a8865e","#8a6a48","#d9c4a3"][i%3]
+    });
+  }
+}
+function updateFeathers(){
+  for(const f of feathers){
+    f.vy += .06;
+    f.x += f.vx + Math.sin(frames*.2 + f.rot)*.4;
+    f.y += f.vy;
+    f.rot += f.vr;
+    f.life -= .012;
+  }
+  feathers = feathers.filter(f => f.life > 0 && f.y < H+20);
+}
+function drawFeathers(){
+  for(const f of feathers){
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rot);
+    ctx.globalAlpha = clamp(f.life,0,1)*.9;
+    ctx.beginPath();
+    ctx.ellipse(0,0, f.size, f.size*.38, 0, 0, Math.PI*2);
+    ctx.fillStyle = f.color; ctx.fill();
+    ctx.strokeStyle = "rgba(60,40,20,.5)"; ctx.lineWidth=.7;
+    ctx.beginPath(); ctx.moveTo(-f.size,0); ctx.lineTo(f.size,0); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- التصادم ---------- */
+function collide(){
+  // الأرض
+  if(bird.y + bird.r >= GROUND_Y) return true;
+  // الأنابيب — دائرة ضد مستطيلات
+  for(const p of pipes){
+    if(bird.x + bird.r < p.x || bird.x - bird.r > p.x + PIPE_W) continue;
+    const topH = p.cy - p.gap/2;
+    const botY = p.cy + p.gap/2;
+    if(circleRect(bird.x, bird.y, bird.r-2, p.x, 0, PIPE_W, topH)) return true;
+    if(circleRect(bird.x, bird.y, bird.r-2, p.x, botY, PIPE_W, GROUND_Y-botY)) return true;
+  }
+  return false;
+}
+function circleRect(cx, cy, cr, rx, ry, rw, rh){
+  const nx = clamp(cx, rx, rx+rw), ny = clamp(cy, ry, ry+rh);
+  const dx = cx-nx, dy = cy-ny;
+  return dx*dx + dy*dy <= cr*cr;
+}
+
+/* ---------- واجهة المستخدم ---------- */
+function textStroke(txt, x, y, size, fill, align="center", weight="bold"){
+  ctx.font = `${weight} ${size}px "Segoe UI", Tahoma, Arial, sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = "middle";
+  ctx.lineWidth = Math.max(3, size*.12);
+  ctx.strokeStyle = "rgba(10,15,25,.75)";
+  ctx.strokeText(txt, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(txt, x, y);
+}
+function drawScore(){
+  textStroke(String(score), W/2, 84, 58, "#ffffff");
+  // اسم المرحلة عند تغيّرها
+  if(stageBanner > 0){
+    ctx.globalAlpha = clamp(stageBanner > 100 ? (120-stageBanner)/20 : Math.min(stageBanner/15,1), 0, 1);
+    textStroke(`المرحلة ${stage.index+1} — ${stage.name}`, W/2, 140, 26, "#ffe9a8");
+    ctx.globalAlpha = 1;
+  }
+}
+function medalFor(s){
+  if(s >= 40) return ["بلاتينية", "#e5e4e2", "#9ba0aa"];
+  if(s >= 30) return ["ذهبية",   "#ffd34d", "#b8860b"];
+  if(s >= 20) return ["فضية",    "#d9dde3", "#8e959f"];
+  if(s >= 10) return ["برونزية", "#d29a5b", "#8a5a2b"];
+  return null;
+}
+function drawPanel(x,y,w,h){
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
+  const g = ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,"rgba(24,32,48,.92)");
+  g.addColorStop(1,"rgba(14,20,32,.94)");
+  ctx.fillStyle = g;
+  roundRect(x,y,w,h,16); ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.lineWidth = 1.5;
+  roundRect(x,y,w,h,16); ctx.stroke();
+  ctx.restore();
+}
+function drawMenu(){
+  textStroke("الطائر الواقعي", W/2, H*0.2, 46, "#ffffff");
+  textStroke("بأسلوب فلابي بيرد — بأجواء حقيقية", W/2, H*0.2 + 46, 19, "#dce6f5");
+
+  drawBird(bird.x, bird.y, bird.rot, bird.wingPhase, false);
+
+  const bob = Math.sin(frames*.08)*4;
+  textStroke("اضغط أو المس للطيران", W/2, H*0.62 + bob, 26, "#ffe9a8");
+  textStroke("كل ١٠ نقاط = مرحلة جديدة أصعب", W/2, H*0.62 + 40, 17, "#c9d6ea");
+  if(best > 0) textStroke(`أفضل نتيجة: ${best}`, W/2, H*0.62 + 74, 18, "#9fd58b");
+}
+function drawGameOver(){
+  ctx.fillStyle = "rgba(5,8,15,.45)";
+  ctx.fillRect(0,0,W,H);
+  const pw = 320, ph = 260, px = (W-pw)/2, py = H*0.24;
+  drawPanel(px,py,pw,ph);
+  textStroke("انتهت المحاولة", W/2, py+42, 30, "#ff8f7a");
+  textStroke(`النتيجة: ${score}`, W/2, py+96, 26, "#ffffff");
+  textStroke(`الأفضل: ${best}`, W/2, py+134, 20, "#9fd58b");
+  const m = medalFor(score);
+  if(m){
+    // ميدالية معدنية
+    const mx = W/2, my = py+184;
+    const mg = ctx.createRadialGradient(mx-6,my-6,3, mx,my,22);
+    mg.addColorStop(0,"#ffffff"); mg.addColorStop(.25,m[1]); mg.addColorStop(1,m[2]);
+    ctx.beginPath(); ctx.arc(mx,my,20,0,Math.PI*2);
+    ctx.fillStyle = mg; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx,my,14,0,Math.PI*2);
+    ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.stroke();
+    textStroke(`ميدالية ${m[0]}`, W/2, my+42, 18, "#ffe9a8");
+  } else {
+    textStroke("اجمع ١٠ نقاط لتحصل على ميدالية", W/2, py+192, 15, "#c9d6ea");
+  }
+  if(deadTimer > 30){
+    const bob = Math.sin(frames*.1)*3;
+    textStroke("اضغط للمحاولة من جديد", W/2, py+ph+52+bob, 22, "#ffe9a8");
+  }
+}
+
+/* ---------- التحكم ---------- */
+function press(){
+  if(state === ST_MENU){
+    startGame();
+    bird.flap();
+  } else if(state === ST_PLAY){
+    bird.flap();
+  } else if(state === ST_DEAD && deadTimer > 30){
+    state = ST_MENU;
+    bird.reset();
+    resetPipes();
+    score = 0;
+    stage = stageFor(0);
+  }
+}
+addEventListener("keydown", e=>{
+  if(e.code === "Space" || e.code === "ArrowUp"){ e.preventDefault(); press(); }
+});
+canvas.addEventListener("pointerdown", e=>{ e.preventDefault(); press(); });
+
+function startGame(){
+  state = ST_PLAY;
+  score = 0;
+  stage = stageFor(0);
+  stageBanner = 120;
+  bird.reset();
+  resetPipes();
+  feathers = [];
+}
+function die(){
+  if(!bird.alive) return;
+  bird.alive = false;
+  state = ST_DEAD;
+  deadTimer = 0;
+  shake = 14; flashA = .5;
+  sfxHit();
+  spawnFeathers(bird.x, bird.y, 14, 1.6);
+  if(score > best){ best = score; localStorage.setItem("realFlappyBest", best); }
+}
+
+/* ---------- حلقة اللعبة ---------- */
+function update(){
+  frames++;
+  updateAtmo();
+  updateWeather();
+  updateFeathers();
+  if(stageBanner > 0) stageBanner--;
+
+  const sp = stage.speed;
+  if(state !== ST_DEAD){
+    scrollFar    += sp * .25;
+    scrollNear   += sp * .5;
+    scrollGround += sp;
+  }
+
+  if(state === ST_MENU){
+    bird.idleFloat();
+  }
+  else if(state === ST_PLAY){
+    bird.update();
+    updatePipes();
+
+    // احتساب النقاط
+    for(const p of pipes){
+      if(!p.passed && p.x + PIPE_W < bird.x - bird.r){
+        p.passed = true;
+        score++;
+        sfxScore();
+        const ns = stageFor(score);
+        if(ns.index !== stage.index){ stageBanner = 120; }
+        stage = ns;
+      }
+    }
+    if(collide()) die();
+  }
+  else if(state === ST_DEAD){
+    deadTimer++;
+    // سقوط الطائر بعد الاصطدام
+    if(bird.y + bird.r < GROUND_Y){
+      bird.vy += bird.gravity;
+      bird.y += bird.vy;
+      bird.rot = lerp(bird.rot, 1.4, .07);
+    } else {
+      bird.y = GROUND_Y - bird.r;
+    }
+  }
+
+  shake  = Math.max(0, shake - .8);
+  flashA = Math.max(0, flashA - .03);
+}
+
+function render(){
+  ctx.save();
+  if(shake > 0) ctx.translate(rand(-shake,shake)*.5, rand(-shake,shake)*.5);
+
+  const night = isNightish();
+  drawBackground();
+  if(state !== ST_MENU) drawPipes(night);
+  drawGround(night);
+  drawFeathers();
+  drawBird(bird.x, bird.y, bird.rot, bird.wingPhase, !bird.alive);
+  drawWeather();
+
+  if(state === ST_MENU) drawMenu();
+  else drawScore();
+  if(state === ST_DEAD) drawGameOver();
+
+  ctx.restore();
+
+  if(flashA > 0){
+    ctx.fillStyle = `rgba(255,255,255,${flashA})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// واجهة فحص للاختبار الآلي
+window.__dbg = {
+  get state(){ return state; }, get score(){ return score; },
+  get bird(){ return bird; },  get pipes(){ return pipes; },
+  get stage(){ return stage; }, get best(){ return best; },
+  press
+};
+</script>
+</body>
+</html>
