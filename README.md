@@ -6,6 +6,7 @@
 - **التطبيق (وظيفة):** الصفحة الرئيسية — https://atatms.github.io/saudi-sports-law-demo/
   نسخة الويب من تطبيق التوظيف الذكي (iOS / Android) المبني بـ Expo + React Native.
 - **منصة الأبحاث (السابقة):** نُقلت إلى مجلد `research/` — https://atatms.github.io/saudi-sports-law-demo/research/
+- **لعبة الطائر الواقعي:** بأسلوب فلابي بيرد برسومات واقعية — https://atatms.github.io/saudi-sports-law-demo/flappy/
 
 ## مصدر الكود
 - كود التطبيق الكامل (المصدر) موجود في الفرع `claude/ios-android-job-app-dsihs2` داخل مجلد `job-app/`.
